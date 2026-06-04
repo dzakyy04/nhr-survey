@@ -1,10 +1,25 @@
 import { useState, useCallback, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Angry,
+  Frown,
+  Meh,
+  Smile,
+  Laugh,
+  Check,
+  CheckCircle2,
+  Stethoscope,
+  HeartPulse,
+} from "lucide-react";
 import {
   PREM_QUESTIONS,
   PROM_QUESTIONS,
   LIKERT_SCALE,
 } from "./data/surveyQuestions";
 
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS
+   ═══════════════════════════════════════════════════════════ */
 function getParams() {
   const p = new URLSearchParams(window.location.search);
   return {
@@ -28,56 +43,61 @@ const DISEASES = {
   10: { name: "Gagal Ginjal Kronik", service: "Nefrologi" },
 };
 
-const C = "#277B85";
-const C_LIGHT = "#e6f3f4";
+// Face icons: sad → happy, each with idle tint color
+const FACES = [
+  { value: 1, Icon: Angry, color: "#EF4444", bg: "#FEF2F2", idle: "#D4A0A0" },
+  { value: 2, Icon: Frown, color: "#F97316", bg: "#FFF7ED", idle: "#D4B48A" },
+  { value: 3, Icon: Meh,   color: "#EAB308", bg: "#FEFCE8", idle: "#C0AD5C" },
+  { value: 4, Icon: Smile, color: "#1BBAAF", bg: "#F0FDFB", idle: "#7CC0B8" },
+  { value: 5, Icon: Laugh, color: "#22C55E", bg: "#F0FDF4", idle: "#7CC08A" },
+];
 
-function Stars({ count, size = 14, maxW }) {
+/* ═══════════════════════════════════════════════════════════
+   QUESTION CARD
+   ═══════════════════════════════════════════════════════════ */
+function QuestionCard({ q, value, onSelect }) {
   return (
-    <span className="opt-stars" style={{ fontSize: size, ...(maxW ? { maxWidth: maxW } : {}) }}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= count ? "on" : "off"}>★</span>
-      ))}
-    </span>
-  );
-}
-
-function Question({ q, value, onSelect }) {
-  return (
-    <div className="survey-card" id={`q-${q.id}`}>
-      <div className="flex items-start gap-3 mb-3">
-        <span
-          className="shrink-0 w-7 h-7 rounded-full text-white text-xs font-bold flex items-center justify-center"
-          style={{ background: C }}
-        >
-          {q.number}
-        </span>
-        <div>
-          <span
-            className="inline-block text-[11px] font-medium px-2 py-0.5 rounded mb-1"
-            style={{ color: C, background: C_LIGHT }}
-          >
-            {q.category}
-          </span>
-          <p className="text-[13.5px] sm:text-sm text-[#2a3a4a] leading-relaxed">
-            {q.question}
-          </p>
+    <div className={`q-card ${value ? "answered" : ""}`} id={`q-${q.id}`}>
+      {value && (
+        <div className="q-done">
+          <Check size={13} strokeWidth={2.5} />
         </div>
+      )}
+
+      <div className="q-top">
+        <span className="q-num">{q.number}.</span>
+        <span className="q-cat">{q.category}</span>
       </div>
-      <div className="flex items-stretch gap-1.5 sm:gap-2.5">
-        {LIKERT_SCALE.map((opt) => {
-          const sel = value === opt.value;
+
+      <p className="q-text">{q.question}</p>
+
+      <div className="face-row">
+        {FACES.map((face) => {
+          const sel = value === face.value;
           return (
-            <button
-              key={opt.value}
+            <motion.button
+              key={face.value}
               type="button"
-              onClick={() => onSelect(q.id, opt.value)}
-              className={`opt-btn ${sel ? `selected-${opt.value}` : ""}`}
+              whileTap={{ scale: 0.88 }}
+              className={`face-btn ${sel ? "selected" : ""}`}
+              style={{
+                "--face-color": face.color,
+                "--face-bg": face.bg,
+                "--face-idle": face.idle,
+              }}
+              onClick={() => onSelect(q.id, face.value)}
+              aria-label={LIKERT_SCALE[face.value - 1].label}
+              aria-pressed={sel}
             >
-              <Stars count={opt.stars} size={11} maxW={36} />
-              <span className="text-[10px] sm:text-[11px] font-medium leading-tight text-center text-[#4a5a6a]">
-                {opt.label}
+              <face.Icon
+                size={26}
+                className="face-icon"
+                strokeWidth={sel ? 2.2 : 1.6}
+              />
+              <span className="face-label">
+                {LIKERT_SCALE[face.value - 1].label}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -85,199 +105,222 @@ function Question({ q, value, onSelect }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   MAIN APP
+   ═══════════════════════════════════════════════════════════ */
 export default function App() {
   const params = useMemo(getParams, []);
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
   const disease = DISEASES[params.disease] || { name: "-", service: "-" };
+  const total = PREM_QUESTIONS.length + PROM_QUESTIONS.length;
+  const answered = Object.keys(answers).length;
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+
+  const premAnswered = PREM_QUESTIONS.filter((q) => answers[q.id]).length;
+  const promAnswered = PROM_QUESTIONS.filter((q) => answers[q.id]).length;
 
   const handleSelect = useCallback((id, val) => {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const total = PREM_QUESTIONS.length + PROM_QUESTIONS.length;
-  const answered = Object.keys(answers).length;
+  /* ─── Success ─── */
+  if (submitted) {
+    return (
+      <motion.div
+        className="success-page"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.div
+          className="success-content"
+          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.35 }}
+        >
+          <div className="success-icon">
+            <CheckCircle2 size={40} color="#059669" strokeWidth={1.8} />
+          </div>
+          <h2>Terima Kasih!</h2>
+          <p>
+            Survei berhasil dikirim. Jawaban Anda akan membantu meningkatkan
+            kualitas pelayanan rumah sakit.
+          </p>
+          <button
+            className="success-btn"
+            onClick={() => setSubmitted(false)}
+          >
+            Selesai
+          </button>
+        </motion.div>
+      </motion.div>
+    );
+  }
 
-  const GUIDE_STYLES = {
-    5: { bg: "#ecfdf5", border: "#a7f3d0", text: "#059669" },
-    4: { bg: "#f0fdfa", border: "#99f6e4", text: "#0d9488" },
-    3: { bg: "#fffbeb", border: "#fde68a", text: "#d97706" },
-    2: { bg: "#fff7ed", border: "#fed7aa", text: "#ea580c" },
-    1: { bg: "#fff1f2", border: "#fecdd3", text: "#e11d48" },
-  };
-
+  /* ─── Survey form ─── */
   return (
     <>
-      <div className="w-full max-w-2xl mx-auto px-3 sm:px-6 py-5 sm:py-6 space-y-4 sm:space-y-5">
+      {/* ── Sticky progress strip ── */}
+      <div className="progress-strip">
+        <div className="progress-fill" style={{ width: `${pct}%` }} />
+      </div>
 
-        {/* Header */}
-        <div className="survey-card">
-          <div className="flex items-center gap-3 mb-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: C }}
-            >
-              <svg width="20" height="20" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-                <rect x="9" y="3" width="6" height="4" rx="1"/>
-                <path d="M9 14l2 2 4-4"/>
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-[#1a2b3c]">
-                Patient Reported Measurement (PRM)
-              </h1>
-              <p className="text-xs text-[#6b7b8d]">PREM & PROM Assessment</p>
-            </div>
+      {/* ── Hero header ── */}
+      <header className="hero">
+        <div className="hero-inner">
+          <div className="hero-text">
+            <span className="hero-badge">Patient Reported Measurement</span>
+            <h1>Survei Kepuasan Pasien</h1>
+            <p className="hero-desc">
+              Jawab pertanyaan berikut sesuai pengalaman Anda selama dirawat di
+              rumah sakit ini. Jawaban Anda bersifat <strong>rahasia</strong>.
+            </p>
           </div>
-          <div
-            className="rounded-xl px-4 py-3 text-[13px] leading-relaxed"
-            style={{ background: C_LIGHT, color: "#2a5560" }}
-          >
-            Survei ini mengevaluasi pengalaman dan hasil perawatan Anda.
-            Jawaban bersifat <strong className="font-semibold text-[#1a2b3c]">rahasia</strong> dan
-            akan membantu meningkatkan kualitas pelayanan.
-          </div>
+
+          <img
+            src="/hero-medical.png"
+            alt="Ilustrasi dokter dan pasien"
+            className="hero-image"
+          />
         </div>
+      </header>
 
+      {/* ── Main content ── */}
+      <main className="survey-wrap">
         {/* Patient info */}
-        <div className="survey-card">
-          <h2 className="text-sm font-bold text-[#1a2b3c] mb-3">Data Pasien</h2>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-[11px] text-[#6b7b8d] mb-1">Nama Lengkap</label>
-              <div className="bg-[#f5f7fa] rounded-lg px-3 py-2 text-sm font-medium text-[#1a2b3c] border border-[#e5e9ee]">
-                {params.name}
-              </div>
+        <div className="card patient-card">
+          <div className="patient-row">
+            <div className="patient-field">
+              <label>Nama Lengkap</label>
+              <span className="value">{params.name}</span>
             </div>
-            <div>
-              <label className="block text-[11px] text-[#6b7b8d] mb-1">Nomor Rekam Medis</label>
-              <div className="bg-[#f5f7fa] rounded-lg px-3 py-2 text-sm font-medium text-[#1a2b3c] border border-[#e5e9ee]">
-                {params.rm}
-              </div>
+            <div className="patient-field">
+              <label>No. Rekam Medis</label>
+              <span className="value">{params.rm}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-lg px-3 py-2.5" style={{ background: C_LIGHT }}>
-            <svg width="16" height="16" fill="none" stroke={C} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-            </svg>
-            <span className="text-[12px] text-[#3a5060]">
-              <strong style={{ color: C }}>Pelayanan: {disease.service}</strong>
-              <span className="mx-1.5 text-[#c0c8d0]">|</span>
-              Penyakit: {disease.name}
-            </span>
+          <div className="patient-disease">
+            <strong>{disease.service}</strong>&nbsp;— {disease.name}
           </div>
         </div>
 
-        {/* Scoring guide */}
-        <div className="survey-card">
-          <h2 className="text-sm font-bold text-[#1a2b3c] mb-3">Panduan Penilaian</h2>
-          <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
-            {LIKERT_SCALE.map((item) => {
-              const s = GUIDE_STYLES[item.value];
+        {/* Guide */}
+        <div className="card guide-card">
+          <p className="guide-title">Panduan Penilaian</p>
+          <p className="guide-desc">
+            Pilih ekspresi wajah yang sesuai untuk setiap pertanyaan
+          </p>
+          <div className="guide-faces">
+            {FACES.map((face) => {
+              const label = LIKERT_SCALE[face.value - 1];
               return (
-                <div
-                  key={item.value}
-                  className="flex flex-col items-center gap-1.5 p-2 sm:p-4 rounded-xl"
-                  style={{ background: s.bg, border: `1.5px solid ${s.border}` }}
-                >
-                  <Stars count={item.stars} size={14} maxW={46} />
-                  <span
-                    className="text-[10px] sm:text-xs font-semibold text-center leading-tight"
-                    style={{ color: s.text }}
+                <div key={face.value} className="guide-face-item">
+                  <div
+                    className="guide-face-circle"
+                    style={{ background: face.bg }}
                   >
-                    {item.label}
+                    <face.Icon
+                      size={22}
+                      color={face.color}
+                      strokeWidth={1.8}
+                    />
+                  </div>
+                  <span
+                    className="guide-face-label"
+                    style={{ color: face.color }}
+                  >
+                    {label.label}
                   </span>
-                  <span className="text-[9px] sm:text-[10px] text-[#9aa5b0]">{item.points} poin</span>
+                  <span className="guide-face-points">
+                    {label.points} poin
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* PREM */}
-        <div className="survey-card" style={{ background: C_LIGHT }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: C }}>
-              <svg width="18" height="18" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[#1a2b3c]">PREM - Pengalaman Pasien</h2>
-              <p className="text-[11px] text-[#6b7b8d]">Patient Reported Experience (Bobot 60%)</p>
-            </div>
+        {/* ── PREM ── */}
+        <div className="section-card">
+          <div className="section-icon-wrap">
+            <Stethoscope size={20} />
           </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2>PREM - Pengalaman Pasien</h2>
+            <p>Patient Reported Experience (Bobot 60%)</p>
+          </div>
+          <span className="section-badge">
+            {premAnswered}/{PREM_QUESTIONS.length}
+          </span>
         </div>
 
         {PREM_QUESTIONS.map((q) => (
-          <Question key={q.id} q={q} value={answers[q.id]} onSelect={handleSelect} />
+          <QuestionCard
+            key={q.id}
+            q={q}
+            value={answers[q.id]}
+            onSelect={handleSelect}
+          />
         ))}
 
-        {/* PROM */}
-        <div className="survey-card" style={{ background: C_LIGHT }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: C }}>
-              <svg width="18" height="18" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-              </svg>
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-[#1a2b3c]">PROM - Hasil Pengobatan</h2>
-              <p className="text-[11px] text-[#6b7b8d]">Patient Reported Outcome (Bobot 40%)</p>
-            </div>
+        {/* ── PROM ── */}
+        <div className="section-card">
+          <div className="section-icon-wrap">
+            <HeartPulse size={20} />
           </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2>PROM - Hasil Pengobatan</h2>
+            <p>Patient Reported Outcome (Bobot 40%)</p>
+          </div>
+          <span className="section-badge">
+            {promAnswered}/{PROM_QUESTIONS.length}
+          </span>
         </div>
 
         {PROM_QUESTIONS.map((q) => (
-          <Question key={q.id} q={q} value={answers[q.id]} onSelect={handleSelect} />
+          <QuestionCard
+            key={q.id}
+            q={q}
+            value={answers[q.id]}
+            onSelect={handleSelect}
+          />
         ))}
 
-        {/* Submit inline */}
-        <div className="survey-card text-center">
-          <p className="text-[12px] text-[#6b7b8d] mb-3">
-            {answered} dari {total} pertanyaan telah dijawab
+        {/* ── Submit ── */}
+        <div className="card submit-section">
+          <p className="submit-count">
+            {answered} dari {total} pertanyaan dijawab
           </p>
-          <button
+          <motion.button
+            className="submit-btn"
             type="button"
+            whileTap={{ scale: 0.97 }}
             onClick={() => setSubmitted(true)}
-            className="w-full py-3 rounded-xl text-white text-sm font-semibold active:scale-[.97] transition-transform"
-            style={{ background: C }}
           >
-            Kirim Survey
-          </button>
+            Kirim Survei
+          </motion.button>
         </div>
+      </main>
 
-        <div className="h-6" />
-      </div>
-
-      {/* Success modal */}
-      {submitted && (
-        <div className="overlay" onClick={() => setSubmitted(false)}>
-          <div className="overlay-card" onClick={(e) => e.stopPropagation()}>
-            <div className="w-14 h-14 rounded-full bg-[#ecfdf5] flex items-center justify-center mx-auto mb-4">
-              <svg width="28" height="28" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-                <path d="M22 4L12 14.01l-3-3"/>
-              </svg>
-            </div>
-            <h2 className="text-lg font-bold text-[#1a2b3c] mb-1.5">Survey Berhasil Dikirim</h2>
-            <p className="text-sm text-[#6b7b8d] leading-relaxed mb-5">
-              Terima kasih atas partisipasi Anda. Jawaban Anda akan membantu
-              meningkatkan kualitas pelayanan rumah sakit.
-            </p>
-            <button
-              type="button"
-              onClick={() => setSubmitted(false)}
-              className="w-full py-2.5 rounded-xl text-white text-sm font-semibold active:scale-[.97] transition-transform"
-              style={{ background: C }}
-            >
-              Selesai
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── Floating progress pill ── */}
+      <AnimatePresence>
+        {answered > 0 && answered < total && (
+          <motion.div
+            className="progress-pill"
+            initial={{ opacity: 0, y: 20, x: 0 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: 20, x: 0 }}
+            transition={{ duration: 0.25 }}
+          >
+            <CheckCircle2 size={14} strokeWidth={2.5} />
+            <span>
+              {answered}/{total} dijawab
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

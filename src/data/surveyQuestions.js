@@ -37,42 +37,42 @@ export const PREM_QUESTIONS = [
     number: 4,
     category: "Informasi",
     question:
-      "Anda menerima informasi tertulis atau lisan yang jelas mengenai obat pengencer darah (antiplatelet/antikoagulan) yang harus diminum setelah pulang",
+      "Staf medis memberi informasi yang cukup tentang kondisi jantung dan pengobatan anda",
   },
   {
     id: "prem_5",
     number: 5,
     category: "Shared Decision",
     question:
-      "Anda dilibatkan dalam keputusan tentang pilihan pengobatan (misalnya PCI vs trombolisis vs konservatif)",
+      "Anda merasa dilibatkan dalam pengambilan keputusan terkait prosedur kardiovaskular anda",
   },
   {
     id: "prem_6",
     number: 6,
     category: "Lingkungan",
     question:
-      "Ruang perawatan (ICCU/bangsal jantung) bersih, tenang, dan nyaman untuk pemulihan",
+      "Ruang perawatan jantung bersih, nyaman, dan kondusif untuk pemulihan anda",
   },
   {
     id: "prem_7",
     number: 7,
     category: "Edukasi Obat",
     question:
-      "Perawat/apoteker menjelaskan efek samping obat jantung yang harus diwaspadai (misalnya risiko perdarahan akibat antiplatelet ganda)",
+      "Resep dan petunjuk penggunaan obat (antiplatelet, beta-blocker, statin) dijelaskan dengan jelas kepada anda",
   },
   {
     id: "prem_8",
     number: 8,
     category: "Discharge",
     question:
-      "Saat pulang, anda mendapat penjelasan yang jelas tentang jadwal kontrol, tanda bahaya yang harus diwaspadai, dan rencana rehabilitasi jantung",
+      "Anda mendapat informasi yang jelas tentang jadwal kontrol dan tanda bahaya yang harus diwaspadai setelah pulang",
   },
   {
     id: "prem_9",
     number: 9,
     category: "Administrasi",
     question:
-      "Proses pendaftaran, administrasi, dan pengurusan jaminan (BPJS/asuransi) berjalan lancar tanpa hambatan berarti",
+      "Proses administrasi (pendaftaran, pembiayaan, klaim bpjs) berjalan lancar dan tidak membebani",
   },
   {
     id: "prem_10",
@@ -103,71 +103,69 @@ export const PROM_QUESTIONS = [
     number: 2,
     category: "Kapasitas (Duke)",
     question:
-      "Anda mampu berjalan di lorong bangsal atau naik tangga tanpa nyeri dada atau sesak napas yang berarti",
+      "Anda mampu berjalan setara 100 meter tanpa merasa nyeri dada atau sesak napas",
   },
   {
     id: "prom_3",
     number: 3,
     category: "Respirasi",
     question:
-      "Sesak napas anda membaik dibanding saat pertama masuk rumah sakit",
+      "Seberapa berkurang frekuensi sesak napas Anda dalam 1 minggu terakhir dibandingkan sebelum masuk RS",
   },
   {
     id: "prom_4",
     number: 4,
     category: "Kemandirian",
     question:
-      "Anda dapat melakukan aktivitas dasar (mandi, berpakaian, makan) secara mandiri saat ini",
+      "Anda dapat melakukan aktivitas ringan sehari-hari (mandi, berpakaian) secara mandiri",
   },
   {
     id: "prom_5",
     number: 5,
     category: "Kualitas Tidur",
     question:
-      "Anda dapat tidur dengan nyenyak tanpa terbangun karena sesak napas atau nyeri dada",
+      "Kualitas tidur anda membaik sejak mendapat perawatan di rumah sakit",
   },
   {
     id: "prom_6",
     number: 6,
     category: "Mental",
     question:
-      "Anda merasa lebih tenang dan tidak cemas mengenai kondisi jantung anda setelah mendapat perawatan",
+      "Anda merasa tenang dan tidak cemas berlebihan tentang kondisi jantung anda saat ini",
   },
   {
     id: "prom_7",
     number: 7,
     category: "Kepatuhan",
     question:
-      "Anda memahami dan bersedia minum obat jantung sesuai jadwal yang diberikan dokter setelah pulang",
+      "Anda memahami dan dapat mematuhi pengobatan jangka panjang anda",
   },
   {
     id: "prom_8",
     number: 8,
     category: "Gaya Hidup",
     question:
-      "Anda bersedia mengubah gaya hidup (berhenti merokok, diet rendah garam/lemak, olahraga teratur) sesuai anjuran dokter",
+      "Anda sudah mulai menerapkan gaya hidup sehat (berhenti merokok, diet) sesuai anjuran dokter",
   },
   {
     id: "prom_9",
     number: 9,
     category: "Kesejahteraan",
     question:
-      "Secara keseluruhan, anda merasa kondisi kesehatan anda lebih baik dibanding saat pertama kali masuk RS",
+      "Semangat dan motivasi hidup anda meningkat setelah mendapat perawatan",
   },
   {
     id: "prom_10",
     number: 10,
     category: "Outcome Global",
     question:
-      "Anda yakin bahwa perawatan yang diterima di RS ini memberikan hasil yang baik untuk kondisi jantung anda",
+      "Secara keseluruhan, apakah kondisi kesehatan Anda terasa lebih baik dibandingkan saat pertama kali masuk RS",
   },
   {
     id: "prom_11",
     number: 11,
     category: "Aspek Keperawatan",
     question:
-      "Perawat memberikan edukasi tentang latihan napas dalam dan mobilisasi bertahap pasca tindakan",
+      "Saya dapat bed rest dan istirahat selama perawatan",
   },
 ];
-
-
