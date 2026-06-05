@@ -211,16 +211,32 @@ h1, h2, h3 {
   color: var(--text);
 }
 
-.patient-disease {
-  font-size: 13px;
-  color: var(--text-muted);
-  padding: 10px 14px;
-  background: var(--color-primary-light);
+.patient-field--full {
+  background: var(--bg);
   border-radius: 10px;
-  line-height: 1.5;
+  padding: 10px 14px;
+  margin-bottom: 10px;
 }
 
-.patient-disease strong {
+.patient-field--full label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+
+.patient-field--full .value {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.patient-field--teal {
+  background: var(--color-primary-light);
+}
+
+.patient-field--teal .value {
   color: var(--color-primary-dark);
 }
 
@@ -543,6 +559,43 @@ h1, h2, h3 {
   box-shadow: 0 2px 8px rgba(27, 186, 175, 0.2);
 }
 
+.submit-btn--disabled {
+  background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.submit-btn--disabled:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   NO-TOKEN BANNER
+   ══════════════════════════════════════════════════════════ */
+.no-token-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+  border: 1px solid rgba(217, 119, 6, 0.15);
+  color: #92400E;
+}
+
+.no-token-banner svg {
+  flex-shrink: 0;
+  color: #D97706;
+  margin-top: 2px;
+}
+
+.no-token-banner p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 /* ══════════════════════════════════════════════════════════
    PROGRESS PILL — centered via auto margins (not transform)
    ══════════════════════════════════════════════════════════ */
@@ -628,6 +681,93 @@ h1, h2, h3 {
 .success-btn:hover {
   box-shadow: 0 6px 24px rgba(27, 186, 175, 0.4);
   transform: translateY(-1px);
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATE PAGES (loading, error, completed, no-token)
+   ══════════════════════════════════════════════════════════ */
+.state-page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(180deg, #e6f7f5 0%, #f1f5f9 50%, #f8fafc 100%);
+}
+
+.state-content {
+  text-align: center;
+  max-width: 400px;
+}
+
+.state-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.state-icon--loading {
+  background: linear-gradient(135deg, var(--color-primary-light), #D1F5F0);
+  color: var(--color-primary);
+}
+
+.state-icon--error {
+  background: linear-gradient(135deg, #FEF2F2, #FECACA);
+  color: #EF4444;
+}
+
+.state-icon--warning {
+  background: linear-gradient(135deg, #FFFBEB, #FDE68A);
+  color: #D97706;
+}
+
+.state-icon--completed {
+  background: linear-gradient(135deg, #EEF2FF, #C7D2FE);
+  color: #6366F1;
+}
+
+.state-content h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 10px;
+  color: var(--text);
+}
+
+.state-content p {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin: 0 0 28px;
+}
+
+.state-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 36px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(27, 186, 175, 0.3);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.state-btn:hover {
+  box-shadow: 0 6px 24px rgba(27, 186, 175, 0.4);
+  transform: translateY(-1px);
+}
+
+.state-btn:active {
+  transform: scale(0.97);
 }
 
 /* ══════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Angry,
@@ -10,38 +10,37 @@ import {
   CheckCircle2,
   Stethoscope,
   HeartPulse,
+  Loader2,
+  AlertTriangle,
+  ShieldX,
+  ClipboardCheck,
+  RefreshCw,
+  WifiOff,
 } from "lucide-react";
 import {
   PREM_QUESTIONS,
   PROM_QUESTIONS,
   LIKERT_SCALE,
 } from "./data/surveyQuestions";
+import { fetchTokenData, TokenError } from "./services/api";
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════════════════════ */
-function getParams() {
-  const p = new URLSearchParams(window.location.search);
-  return {
-    name: p.get("name") || "Pasien",
-    rm: p.get("rm") || "-",
-    disease: p.get("disease") || "0",
-  };
-}
 
-const DISEASES = {
-  0: { name: "STEMI (ST-Elevation Myocardial Infarction)", service: "Kardiologi" },
-  1: { name: "NSTEMI (Non-ST-Elevation Myocardial Infarction)", service: "Kardiologi" },
-  2: { name: "Unstable Angina", service: "Kardiologi" },
-  3: { name: "Heart Failure", service: "Kardiologi" },
-  4: { name: "Atrial Fibrillation", service: "Kardiologi" },
-  5: { name: "Stroke Iskemik", service: "Neurologi" },
-  6: { name: "Stroke Hemoragik", service: "Neurologi" },
-  7: { name: "Pneumonia", service: "Pulmonologi" },
-  8: { name: "PPOK", service: "Pulmonologi" },
-  9: { name: "Diabetes Melitus Tipe 2", service: "Penyakit Dalam" },
-  10: { name: "Gagal Ginjal Kronik", service: "Nefrologi" },
-};
+/**
+ * Extract token from URL path.
+ * e.g. "/abc123def456" → "abc123def456"
+ *      "/some/path/abc123" → null (not a direct token)
+ */
+function getTokenFromPath() {
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
+  // Token should be a non-empty string without slashes
+  if (path && !path.includes("/")) {
+    return path;
+  }
+  return null;
+}
 
 // Face icons: sad → happy, each with idle tint color
 const FACES = [
@@ -51,6 +50,127 @@ const FACES = [
   { value: 4, Icon: Smile, color: "#1BBAAF", bg: "#F0FDFB", idle: "#7CC0B8" },
   { value: 5, Icon: Laugh, color: "#22C55E", bg: "#F0FDF4", idle: "#7CC08A" },
 ];
+
+/* ═══════════════════════════════════════════════════════════
+   FULL-PAGE STATE SCREENS
+   ═══════════════════════════════════════════════════════════ */
+
+/** Loading — shown while fetching token data */
+function LoadingPage() {
+  return (
+    <motion.div
+      className="state-page"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="state-content">
+        <motion.div
+          className="state-icon state-icon--loading"
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+        >
+          <Loader2 size={36} strokeWidth={1.8} />
+        </motion.div>
+        <h2>Memuat Data Pasien</h2>
+        <p>Memvalidasi token dan mengambil informasi pasien Anda…</p>
+      </div>
+    </motion.div>
+  );
+}
+
+/** Error — token not found, network error, etc. */
+function ErrorPage({ code, message, onRetry }) {
+  const isNetwork = code === "NETWORK_ERROR";
+
+  return (
+    <motion.div
+      className="state-page"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        className="state-content"
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.35 }}
+      >
+        <div className={`state-icon ${isNetwork ? "state-icon--warning" : "state-icon--error"}`}>
+          {isNetwork ? (
+            <WifiOff size={36} strokeWidth={1.8} />
+          ) : (
+            <ShieldX size={36} strokeWidth={1.8} />
+          )}
+        </div>
+        <h2>{isNetwork ? "Gagal Terhubung" : "Token Tidak Valid"}</h2>
+        <p>{message}</p>
+        {isNetwork && onRetry && (
+          <button className="state-btn" onClick={onRetry}>
+            <RefreshCw size={16} strokeWidth={2} />
+            Coba Lagi
+          </button>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/** Completed — survey already submitted for this token */
+function CompletedPage() {
+  return (
+    <motion.div
+      className="state-page"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        className="state-content"
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.35 }}
+      >
+        <div className="state-icon state-icon--completed">
+          <ClipboardCheck size={36} strokeWidth={1.8} />
+        </div>
+        <h2>Survei Sudah Diisi</h2>
+        <p>
+          Token ini sudah digunakan untuk mengisi survei sebelumnya.
+          Terima kasih atas partisipasi Anda.
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/** No Token — root page or invalid path */
+function NoTokenPage() {
+  return (
+    <motion.div
+      className="state-page"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      <motion.div
+        className="state-content"
+        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.35 }}
+      >
+        <div className="state-icon state-icon--warning">
+          <AlertTriangle size={36} strokeWidth={1.8} />
+        </div>
+        <h2>Token Diperlukan</h2>
+        <p>
+          Silakan scan barcode yang diberikan oleh petugas rumah sakit
+          untuk mengakses formulir survei.
+        </p>
+      </motion.div>
+    </motion.div>
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════
    QUESTION CARD
@@ -109,11 +229,50 @@ function QuestionCard({ q, value, onSelect }) {
    MAIN APP
    ═══════════════════════════════════════════════════════════ */
 export default function App() {
-  const params = useMemo(getParams, []);
+  // Token from URL path
+  const token = useMemo(getTokenFromPath, []);
+
+  // API fetch states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // { code, message }
+  const [patient, setPatient] = useState(null);
+
+  // Survey states
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
 
-  const disease = DISEASES[params.disease] || { name: "-", service: "-" };
+  // Fetch patient data from API
+  const loadPatientData = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchTokenData(token);
+      setPatient(data);
+    } catch (err) {
+      if (err instanceof TokenError) {
+        setError({ code: err.code, message: err.message });
+      } else {
+        setError({
+          code: "NETWORK_ERROR",
+          message: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    loadPatientData();
+  }, [loadPatientData]);
+
+  // Survey logic
   const total = PREM_QUESTIONS.length + PROM_QUESTIONS.length;
   const answered = Object.keys(answers).length;
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
@@ -125,7 +284,28 @@ export default function App() {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  /* ─── Success ─── */
+  const canSubmit = !!patient;
+
+  /* ─── Loading ─── */
+  if (loading) {
+    return <LoadingPage />;
+  }
+
+  /* ─── Error states ─── */
+  if (error) {
+    if (error.code === "COMPLETED") {
+      return <CompletedPage />;
+    }
+    return (
+      <ErrorPage
+        code={error.code}
+        message={error.message}
+        onRetry={loadPatientData}
+      />
+    );
+  }
+
+  /* ─── Success (submitted) ─── */
   if (submitted) {
     return (
       <motion.div
@@ -190,21 +370,41 @@ export default function App() {
       {/* ── Main content ── */}
       <main className="survey-wrap">
         {/* Patient info */}
-        <div className="card patient-card">
-          <div className="patient-row">
-            <div className="patient-field">
+        {patient && (
+          <div className="card patient-card">
+            <div className="patient-field patient-field--full">
               <label>Nama Lengkap</label>
-              <span className="value">{params.name}</span>
+              <span className="value">{patient.pasien_nama}</span>
             </div>
-            <div className="patient-field">
-              <label>No. Rekam Medis</label>
-              <span className="value">{params.rm}</span>
+            <div className="patient-row">
+              <div className="patient-field">
+                <label>No. RM</label>
+                <span className="value">{patient.norm}</span>
+              </div>
+              <div className="patient-field">
+                <label>No. Registrasi</label>
+                <span className="value">{patient.regpasien_no}</span>
+              </div>
+            </div>
+            <div className="patient-row">
+              <div className="patient-field patient-field--teal">
+                <label>Pelayanan</label>
+                <span className="value">{patient.pelayanan}</span>
+              </div>
+              <div className="patient-field patient-field--teal">
+                <label>Penyakit</label>
+                <span className="value">{patient.penyakit}</span>
+              </div>
             </div>
           </div>
-          <div className="patient-disease">
-            <strong>{disease.service}</strong>&nbsp;— {disease.name}
+        )}
+
+        {!token && (
+          <div className="card no-token-banner">
+            <AlertTriangle size={18} strokeWidth={2} />
+            <p>Scan barcode dari petugas RS untuk mengisi survei. Tanpa token, survei tidak dapat dikirim.</p>
           </div>
-        </div>
+        )}
 
         {/* Guide */}
         <div className="card guide-card">
@@ -294,12 +494,13 @@ export default function App() {
             {answered} dari {total} pertanyaan dijawab
           </p>
           <motion.button
-            className="submit-btn"
+            className={`submit-btn ${!canSubmit ? "submit-btn--disabled" : ""}`}
             type="button"
-            whileTap={{ scale: 0.97 }}
-            onClick={() => setSubmitted(true)}
+            whileTap={canSubmit ? { scale: 0.97 } : {}}
+            onClick={() => canSubmit && setSubmitted(true)}
+            disabled={!canSubmit}
           >
-            Kirim Survei
+            {canSubmit ? "Kirim Survei" : "Token diperlukan untuk mengirim"}
           </motion.button>
         </div>
       </main>
