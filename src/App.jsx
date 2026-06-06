@@ -17,12 +17,13 @@ import {
   RefreshCw,
   WifiOff,
 } from "lucide-react";
+import { LIKERT_SCALE } from "./data/surveyQuestions";
 import {
-  PREM_QUESTIONS,
-  PROM_QUESTIONS,
-  LIKERT_SCALE,
-} from "./data/surveyQuestions";
-import { fetchTokenData, TokenError } from "./services/api";
+  fetchTokenData,
+  fetchSurveyQuestions,
+  submitSurvey,
+  TokenError,
+} from "./services/api";
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -239,23 +240,29 @@ export default function App() {
   const [error, setError] = useState(null); // { code, message }
   const [patient, setPatient] = useState(null);
 
+  // Questions from API
+  const [questions, setQuestions] = useState({ prem: [], prom: [] });
+
   // Survey states
   const [answers, setAnswers] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
 
-  // Fetch patient data from API
-  const loadPatientData = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
+  // Fetch patient data + questions in parallel
+  const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await fetchTokenData(token);
-      setPatient(data);
+      // Questions are always fetched; token data only when token exists
+      const [qs, patientData] = await Promise.all([
+        fetchSurveyQuestions(),
+        token ? fetchTokenData(token) : Promise.resolve(null),
+      ]);
+
+      setQuestions(qs);
+      setPatient(patientData);
     } catch (err) {
       if (err instanceof TokenError) {
         setError({ code: err.code, message: err.message });
@@ -272,22 +279,41 @@ export default function App() {
   }, [token]);
 
   useEffect(() => {
-    loadPatientData();
-  }, [loadPatientData]);
+    loadData();
+  }, [loadData]);
 
   // Survey logic
-  const total = PREM_QUESTIONS.length + PROM_QUESTIONS.length;
+  const premQuestions = questions.prem;
+  const promQuestions = questions.prom;
+  const total = premQuestions.length + promQuestions.length;
   const answered = Object.keys(answers).length;
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
-  const premAnswered = PREM_QUESTIONS.filter((q) => answers[q.id]).length;
-  const promAnswered = PROM_QUESTIONS.filter((q) => answers[q.id]).length;
+  const premAnswered = premQuestions.filter((q) => answers[q.id]).length;
+  const promAnswered = promQuestions.filter((q) => answers[q.id]).length;
 
   const handleSelect = useCallback((id, val) => {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const canSubmit = !!patient;
+  const canSubmit = !!patient && answered === total && total > 0;
+
+  // Handle submit — send answers to API
+  const handleSubmit = useCallback(async () => {
+    if (!canSubmit || submitting) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await submitSurvey(token, patient.regpasien_no, answers);
+      setSubmitted(true);
+    } catch (err) {
+      setSubmitError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [canSubmit, submitting, patient, answers]);
 
   /* ─── Loading ─── */
   if (loading) {
@@ -303,7 +329,7 @@ export default function App() {
       <ErrorPage
         code={error.code}
         message={error.message}
-        onRetry={loadPatientData}
+        onRetry={loadData}
       />
     );
   }
@@ -500,11 +526,11 @@ export default function App() {
             <p>Patient Reported Experience (Bobot 60%)</p>
           </div>
           <span className="section-badge">
-            {premAnswered}/{PREM_QUESTIONS.length}
+            {premAnswered}/{premQuestions.length}
           </span>
         </div>
 
-        {PREM_QUESTIONS.map((q) => (
+        {premQuestions.map((q) => (
           <QuestionCard
             key={q.id}
             q={q}
@@ -523,11 +549,11 @@ export default function App() {
             <p>Patient Reported Outcome (Bobot 40%)</p>
           </div>
           <span className="section-badge">
-            {promAnswered}/{PROM_QUESTIONS.length}
+            {promAnswered}/{promQuestions.length}
           </span>
         </div>
 
-        {PROM_QUESTIONS.map((q) => (
+        {promQuestions.map((q) => (
           <QuestionCard
             key={q.id}
             q={q}
@@ -541,14 +567,25 @@ export default function App() {
           <p className="submit-count">
             {answered} dari {total} pertanyaan dijawab
           </p>
+          {submitError && (
+            <p className="submit-error">
+              {submitError}
+            </p>
+          )}
           <motion.button
-            className={`submit-btn ${!canSubmit ? "submit-btn--disabled" : ""}`}
+            className={`submit-btn ${!canSubmit || submitting ? "submit-btn--disabled" : ""}`}
             type="button"
-            whileTap={canSubmit ? { scale: 0.97 } : {}}
-            onClick={() => canSubmit && setSubmitted(true)}
-            disabled={!canSubmit}
+            whileTap={canSubmit && !submitting ? { scale: 0.97 } : {}}
+            onClick={handleSubmit}
+            disabled={!canSubmit || submitting}
           >
-            {canSubmit ? "Kirim Survei" : "Scan barcode untuk mengirim survei"}
+            {submitting
+              ? "Mengirim..."
+              : canSubmit
+                ? "Kirim Survei"
+                : !patient
+                  ? "Scan barcode untuk mengirim survei"
+                  : `Jawab semua pertanyaan (${answered}/${total})`}
           </motion.button>
         </div>
       </main>

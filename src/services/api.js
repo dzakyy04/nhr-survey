@@ -3,7 +3,51 @@
 const BASE_URL = import.meta.env.API_BASE_URL || "";
 
 /**
+ * Normalize a raw ORDS pertanyaan item into the shape
+ * expected by QuestionCard: { id, number, category, question, jenis }
+ *
+ * @param {{ pertanyaan_id, nomor, pertanyaan, jenis, kategori }} item
+ */
+function normalizeQuestion(item) {
+  return {
+    id: `${item.jenis}_${item.pertanyaan_id}`,
+    number: item.nomor,
+    category: item.kategori,
+    question: item.pertanyaan,
+    jenis: item.jenis,
+  };
+}
+
+/**
+ * Fetch all survey questions from ORDS.
+ * Returns { prem: [...], prom: [...] } — each item normalized for QuestionCard.
+ *
+ * @returns {Promise<{ prem: Array, prom: Array }>}
+ */
+export async function fetchSurveyQuestions() {
+  const url = `${BASE_URL}/pertanyaan/`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gagal memuat pertanyaan (${res.status})`);
+  }
+
+  const json = await res.json();
+  const items = (json.items ?? []).map(normalizeQuestion);
+
+  return {
+    prem: items.filter((q) => q.jenis === "prem"),
+    prom: items.filter((q) => q.jenis === "prom"),
+  };
+}
+
+/**
  * Fetch patient data by token from ORDS.
+ * Response is always a Collection Query: { items: [...], hasMore, count, ... }
  *
  * @param {string} token — 32-char hex token from URL path
  * @returns {Promise<{
@@ -36,9 +80,8 @@ export async function fetchTokenData(token) {
 
   const json = await res.json();
 
-  // ORDS Collection Query wraps data in items[]
-  // ORDS Collection Item returns object directly
-  const data = json.items ? json.items[0] : json;
+  // ORDS always wraps results in items[]
+  const data = (json.items ?? [])[0];
 
   if (!data) {
     throw new TokenError("Token tidak ditemukan", "NOT_FOUND");
@@ -52,6 +95,52 @@ export async function fetchTokenData(token) {
   }
 
   return data;
+}
+
+/**
+ * Submit all survey answers in a single POST.
+ * Backend inserts all answers AND marks the token as completed
+ * in one atomic transaction.
+ *
+ * @param {string} token — 32-char hex token
+ * @param {string} regpasienNo — patient registration number
+ * @param {Record<string, number>} answers — { "prem_1": 4, "prom_12": 5, ... }
+ * @returns {Promise<void>}
+ */
+export async function submitSurvey(token, regpasienNo, answers) {
+  const entries = Object.entries(answers);
+
+  if (entries.length === 0) {
+    throw new Error("Tidak ada jawaban untuk dikirim");
+  }
+
+  // Build jawaban array
+  const jawaban = entries.map(([id, nilai]) => {
+    // id format: "prem_1" or "prom_12" → extract pertanyaan_id after last underscore
+    const pertanyaanId = Number(id.split("_").pop());
+    return { pertanyaan_id: pertanyaanId, nilai };
+  });
+
+  const res = await fetch(`${BASE_URL}/jawaban/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      token,
+      regpasien_no: regpasienNo,
+      jawaban,
+    }),
+  });
+
+  if (res.status === 409) {
+    throw new Error("Survei sudah pernah diisi untuk token ini");
+  }
+
+  if (!res.ok) {
+    throw new Error(`Gagal mengirim survei (${res.status})`);
+  }
 }
 
 /**
