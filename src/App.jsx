@@ -16,6 +16,8 @@ import {
   ClipboardCheck,
   RefreshCw,
   WifiOff,
+  Heart,
+  Sparkles,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
 import {
@@ -123,25 +125,56 @@ function ErrorPage({ code, message, onRetry }) {
 function CompletedPage() {
   return (
     <motion.div
-      className="state-page"
+      className="success-page"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.4 }}
     >
+      {/* Background decorations */}
+      <div className="success-decor">
+        <div className="success-decor-circle success-decor-circle-1" />
+        <div className="success-decor-circle success-decor-circle-2" />
+        <div className="success-decor-plus success-decor-plus-1">+</div>
+        <div className="success-decor-plus success-decor-plus-2">+</div>
+        <div className="success-decor-dots" />
+      </div>
+
       <motion.div
-        className="state-content"
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
+        className="success-content"
+        initial={{ opacity: 0, scale: 0.9, y: 24 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.35 }}
+        transition={{ delay: 0.15, duration: 0.45, type: "spring", stiffness: 120 }}
       >
-        <div className="state-icon state-icon--completed">
-          <ClipboardCheck size={36} strokeWidth={1.8} />
-        </div>
+        <motion.div
+          className="success-icon completed-icon"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 12 }}
+        >
+          <ClipboardCheck size={44} strokeWidth={1.6} />
+        </motion.div>
+
+        <motion.div
+          className="success-sparkle"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+        >
+          <CheckCircle2 size={14} strokeWidth={2} />
+          <span>Survei Sudah Tercatat</span>
+        </motion.div>
+
         <h2>Survei Sudah Diisi</h2>
-        <p>
-          Anda sudah pernah mengisi survei ini sebelumnya. Terima kasih atas
-          partisipasi Anda.
+        <p className="success-main-text">
+          Anda sudah pernah mengisi survei ini sebelumnya.
+          Terima kasih atas partisipasi Anda dalam membantu
+          meningkatkan kualitas pelayanan kami.
         </p>
+
+        <div className="success-message">
+          <Heart size={15} strokeWidth={2} />
+          <span>Semoga lekas sehat dan pemulihan berjalan lancar</span>
+        </div>
       </motion.div>
     </motion.div>
   );
@@ -341,25 +374,74 @@ export default function App() {
         className="success-page"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.4 }}
       >
+        {/* Background decorations */}
+        <div className="success-decor">
+          <div className="success-decor-circle success-decor-circle-1" />
+          <div className="success-decor-circle success-decor-circle-2" />
+          <div className="success-decor-plus success-decor-plus-1">+</div>
+          <div className="success-decor-plus success-decor-plus-2">+</div>
+          <div className="success-decor-dots" />
+        </div>
+
         <motion.div
           className="success-content"
-          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          initial={{ opacity: 0, scale: 0.9, y: 24 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.35 }}
+          transition={{ delay: 0.15, duration: 0.45, type: "spring", stiffness: 120 }}
         >
-          <div className="success-icon">
-            <CheckCircle2 size={40} color="#059669" strokeWidth={1.8} />
-          </div>
+          {/* Animated check icon */}
+          <motion.div
+            className="success-icon"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 12 }}
+          >
+            <CheckCircle2 size={44} strokeWidth={1.6} />
+          </motion.div>
+
+          {/* Sparkle badges */}
+          <motion.div
+            className="success-sparkle"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+          >
+            <Sparkles size={14} strokeWidth={2} />
+            <span>Survei Berhasil Terkirim</span>
+          </motion.div>
+
           <h2>Terima Kasih!</h2>
-          <p>
-            Survei berhasil dikirim. Jawaban Anda akan membantu meningkatkan
-            kualitas pelayanan rumah sakit.
+          <p className="success-main-text">
+            Jawaban Anda sangat berarti untuk meningkatkan kualitas pelayanan
+            rumah sakit kami.
           </p>
-          <button className="success-btn" onClick={() => setSubmitted(false)}>
-            Selesai
-          </button>
+
+          {/* Patient info summary */}
+          {patient && (
+            <div className="success-patient-card">
+              <div className="success-patient-row">
+                <span className="success-patient-label">Nama</span>
+                <span className="success-patient-value">{patient.pasien_nama}</span>
+              </div>
+              <div className="success-patient-row">
+                <span className="success-patient-label">Pelayanan</span>
+                <span className="success-patient-value">{patient.pelayanan}</span>
+              </div>
+              <div className="success-patient-row">
+                <span className="success-patient-label">Pertanyaan Dijawab</span>
+                <span className="success-patient-value success-patient-value--highlight">
+                  {answered}/{total}
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div className="success-message">
+            <Heart size={15} strokeWidth={2} />
+            <span>Semoga lekas sehat dan pemulihan berjalan lancar</span>
+          </div>
         </motion.div>
       </motion.div>
     );
