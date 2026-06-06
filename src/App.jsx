@@ -46,7 +46,7 @@ function getTokenFromPath() {
 const FACES = [
   { value: 1, Icon: Angry, color: "#EF4444", bg: "#FEF2F2", idle: "#D4A0A0" },
   { value: 2, Icon: Frown, color: "#F97316", bg: "#FFF7ED", idle: "#D4B48A" },
-  { value: 3, Icon: Meh,   color: "#EAB308", bg: "#FEFCE8", idle: "#C0AD5C" },
+  { value: 3, Icon: Meh, color: "#EAB308", bg: "#FEFCE8", idle: "#C0AD5C" },
   { value: 4, Icon: Smile, color: "#1BBAAF", bg: "#F0FDFB", idle: "#7CC0B8" },
   { value: 5, Icon: Laugh, color: "#22C55E", bg: "#F0FDF4", idle: "#7CC08A" },
 ];
@@ -72,8 +72,8 @@ function LoadingPage() {
         >
           <Loader2 size={36} strokeWidth={1.8} />
         </motion.div>
-        <h2>Memuat Data Pasien</h2>
-        <p>Memvalidasi token dan mengambil informasi pasien Anda…</p>
+        <h2>Mohon Tunggu</h2>
+        <p>Sedang memuat data Anda…</p>
       </div>
     </motion.div>
   );
@@ -96,14 +96,16 @@ function ErrorPage({ code, message, onRetry }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ delay: 0.1, duration: 0.35 }}
       >
-        <div className={`state-icon ${isNetwork ? "state-icon--warning" : "state-icon--error"}`}>
+        <div
+          className={`state-icon ${isNetwork ? "state-icon--warning" : "state-icon--error"}`}
+        >
           {isNetwork ? (
             <WifiOff size={36} strokeWidth={1.8} />
           ) : (
             <ShieldX size={36} strokeWidth={1.8} />
           )}
         </div>
-        <h2>{isNetwork ? "Gagal Terhubung" : "Token Tidak Valid"}</h2>
+        <h2>{isNetwork ? "Gagal Memuat" : "Link Tidak Valid"}</h2>
         <p>{message}</p>
         {isNetwork && onRetry && (
           <button className="state-btn" onClick={onRetry}>
@@ -136,8 +138,8 @@ function CompletedPage() {
         </div>
         <h2>Survei Sudah Diisi</h2>
         <p>
-          Token ini sudah digunakan untuk mengisi survei sebelumnya.
-          Terima kasih atas partisipasi Anda.
+          Anda sudah pernah mengisi survei ini sebelumnya. Terima kasih atas
+          partisipasi Anda.
         </p>
       </motion.div>
     </motion.div>
@@ -164,8 +166,8 @@ function NoTokenPage() {
         </div>
         <h2>Token Diperlukan</h2>
         <p>
-          Silakan scan barcode yang diberikan oleh petugas rumah sakit
-          untuk mengakses formulir survei.
+          Silakan scan barcode yang diberikan oleh petugas rumah sakit untuk
+          mengakses formulir survei.
         </p>
       </motion.div>
     </motion.div>
@@ -260,7 +262,8 @@ export default function App() {
       } else {
         setError({
           code: "NETWORK_ERROR",
-          message: "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+          message:
+            "Tidak dapat memuat data. Silakan periksa koneksi internet Anda dan coba lagi.",
         });
       }
     } finally {
@@ -328,10 +331,7 @@ export default function App() {
             Survei berhasil dikirim. Jawaban Anda akan membantu meningkatkan
             kualitas pelayanan rumah sakit.
           </p>
-          <button
-            className="success-btn"
-            onClick={() => setSubmitted(false)}
-          >
+          <button className="success-btn" onClick={() => setSubmitted(false)}>
             Selesai
           </button>
         </motion.div>
@@ -349,10 +349,61 @@ export default function App() {
 
       {/* ── Hero header ── */}
       <header className="hero">
+        {/* Background decorations */}
+        <div className="hero-decor">
+          <div className="decor-blur" />
+          <div className="decor-plus decor-plus-1">+</div>
+          <div className="decor-plus decor-plus-2">+</div>
+          <div className="decor-plus decor-plus-3">+</div>
+          <div className="decor-heart">♡</div>
+          <div className="decor-dots decor-dots-top" />
+          <div className="decor-dots decor-dots-bottom" />
+          <div className="decor-wave-lines">
+            <div className="decor-line" />
+            <div className="decor-line" />
+            <div className="decor-line" />
+            <div className="decor-line" />
+          </div>
+          <div className="decor-hospital">
+            <div className="decor-building decor-building-left" />
+            <div className="decor-building decor-building-center">
+              <div className="decor-cross" />
+            </div>
+            <div className="decor-building decor-building-right" />
+          </div>
+          <div className="decor-leaf-group">
+            <div className="decor-leaf" />
+            <div className="decor-leaf" />
+            <div className="decor-leaf" />
+          </div>
+          <svg className="decor-wave decor-wave-1" viewBox="0 0 1440 320">
+            <path
+              fill="white"
+              d="M0,224L60,208C120,192,240,160,360,176C480,192,600,256,720,272C840,288,960,256,1080,218.7C1200,181,1320,139,1380,117.3L1440,96V320H0Z"
+            />
+          </svg>
+          <svg className="decor-wave decor-wave-2" viewBox="0 0 1440 320">
+            <path
+              fill="white"
+              d="M0,160L60,170.7C120,181,240,203,360,224C480,245,600,267,720,250.7C840,235,960,181,1080,149.3C1200,117,1320,107,1380,101.3L1440,96V320H0Z"
+            />
+          </svg>
+        </div>
+
+        {/* Logo top-right */}
+        <div className="hero-logo-wrap">
+          <img src="/logo-rsmh.png" alt="Logo RSMH" className="hero-logo" />
+        </div>
+
         <div className="hero-inner">
           <div className="hero-text">
-            <span className="hero-badge">Patient Reported Measurement</span>
-            <h1>Survei Kepuasan Pasien</h1>
+            <div className="hero-badge">
+              <ClipboardCheck size={16} strokeWidth={2} />
+              <span>Patient Reported Measurement</span>
+            </div>
+            <h1>
+              Survei Kepuasan Pasien
+            </h1>
             <p className="hero-desc">
               Jawab pertanyaan berikut sesuai pengalaman Anda selama dirawat di
               rumah sakit ini. Jawaban Anda bersifat <strong>rahasia</strong>.
@@ -402,7 +453,10 @@ export default function App() {
         {!token && (
           <div className="card no-token-banner">
             <AlertTriangle size={18} strokeWidth={2} />
-            <p>Scan barcode dari petugas RS untuk mengisi survei. Tanpa token, survei tidak dapat dikirim.</p>
+            <p>
+              Silakan scan barcode yang diberikan petugas rumah sakit untuk
+              dapat mengirim survei.
+            </p>
           </div>
         )}
 
@@ -421,11 +475,7 @@ export default function App() {
                     className="guide-face-circle"
                     style={{ background: face.bg }}
                   >
-                    <face.Icon
-                      size={22}
-                      color={face.color}
-                      strokeWidth={1.8}
-                    />
+                    <face.Icon size={22} color={face.color} strokeWidth={1.8} />
                   </div>
                   <span
                     className="guide-face-label"
@@ -433,9 +483,7 @@ export default function App() {
                   >
                     {label.label}
                   </span>
-                  <span className="guide-face-points">
-                    {label.points} poin
-                  </span>
+                  <span className="guide-face-points">{label.points} poin</span>
                 </div>
               );
             })}
@@ -500,7 +548,7 @@ export default function App() {
             onClick={() => canSubmit && setSubmitted(true)}
             disabled={!canSubmit}
           >
-            {canSubmit ? "Kirim Survei" : "Token diperlukan untuk mengirim"}
+            {canSubmit ? "Kirim Survei" : "Scan barcode untuk mengirim survei"}
           </motion.button>
         </div>
       </main>

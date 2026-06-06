@@ -68,12 +68,170 @@ h1, h2, h3 {
    HERO HEADER
    ══════════════════════════════════════════════════════════ */
 .hero {
-  background: var(--color-primary);
-  padding: 20px 0 0;
+  background:
+    radial-gradient(circle at top right, rgba(255,255,255,.25), transparent 35%),
+    linear-gradient(135deg, #0EB4A9 0%, #0a9e94 100%);
   margin-bottom: 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (min-width: 431px) and (max-width: 767px) {
+  .hero {
+    padding: 32px 0 0;
+  }
+}
+
+/* ── Decorations container ── */
+.hero-decor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
   overflow: hidden;
 }
 
+/* Blur light */
+.decor-blur {
+  position: absolute;
+  top: -80px;
+  right: -60px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.22), transparent 70%);
+}
+
+/* Plus signs */
+.decor-plus {
+  position: absolute;
+  color: rgba(255,255,255,.12);
+  font-size: 50px;
+  font-weight: 900;
+  user-select: none;
+}
+.decor-plus-1 { top: 15%; right: 35%; }
+.decor-plus-2 { right: 10%; bottom: 25%; font-size: 65px; }
+.decor-plus-3 { top: 50%; right: 25%; font-size: 35px; }
+
+/* Heart */
+.decor-heart {
+  position: absolute;
+  top: 10%;
+  right: 8%;
+  font-size: 60px;
+  color: rgba(255,255,255,.10);
+  user-select: none;
+}
+
+/* Dot patterns */
+.decor-dots {
+  position: absolute;
+  width: 80px;
+  height: 50px;
+  background-image: radial-gradient(rgba(255,255,255,.18) 1.5px, transparent 1.5px);
+  background-size: 12px 12px;
+}
+.decor-dots-top { top: 20px; left: 16px; }
+.decor-dots-bottom { right: 20px; bottom: 20px; }
+
+/* Wave lines */
+.decor-wave-lines {
+  position: absolute;
+  left: -60px;
+  bottom: 20px;
+  width: 300px;
+  height: 120px;
+  border-radius: 50%;
+  opacity: .12;
+}
+.decor-line {
+  position: absolute;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 50%;
+}
+.decor-line:nth-child(1) { width: 200px; height: 80px; }
+.decor-line:nth-child(2) { width: 230px; height: 95px; top: 6px; left: 12px; }
+.decor-line:nth-child(3) { width: 260px; height: 110px; top: 12px; left: 24px; }
+.decor-line:nth-child(4) { width: 290px; height: 125px; top: 18px; left: 36px; }
+
+/* Hospital silhouette */
+.decor-hospital {
+  position: absolute;
+  right: 70px;
+  bottom: 0;
+  width: 200px;
+  height: 130px;
+  opacity: .06;
+}
+.decor-building {
+  position: absolute;
+  bottom: 0;
+  background: white;
+  border-radius: 8px 8px 0 0;
+}
+.decor-building-left { width: 46px; height: 85px; left: 0; }
+.decor-building-center { width: 70px; height: 120px; left: 58px; }
+.decor-building-right { width: 46px; height: 85px; right: 0; }
+.decor-cross {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 28px;
+}
+.decor-cross::before,
+.decor-cross::after {
+  content: '';
+  position: absolute;
+  background: rgba(20,184,166,.35);
+  border-radius: 4px;
+}
+.decor-cross::before { width: 28px; height: 9px; top: 9.5px; }
+.decor-cross::after { width: 9px; height: 28px; left: 9.5px; }
+
+/* Leaf group */
+.decor-leaf-group {
+  position: absolute;
+  right: 12px;
+  bottom: 50px;
+  display: flex;
+  gap: 6px;
+}
+.decor-leaf {
+  width: 16px;
+  height: 44px;
+  background: rgba(255,255,255,.10);
+  border-radius: 28px 28px 0 28px;
+  transform: rotate(-35deg);
+}
+
+/* SVG waves */
+.decor-wave {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+.decor-wave-1 { bottom: -6px; opacity: .16; }
+.decor-wave-2 { bottom: -28px; opacity: .08; }
+
+/* ── Logo top-right ── */
+.hero-logo-wrap {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 2;
+}
+
+.hero-logo {
+  width: 90px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.15));
+}
+
+/* ── Inner layout ── */
 .hero-inner {
   max-width: 800px;
   margin: 0 auto;
@@ -82,38 +240,56 @@ h1, h2, h3 {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
 }
 
-.hero-text { flex: 1; min-width: 0; }
+.hero-text { flex: 1; min-width: 0; padding: 12px 0 20px; }
 
 .hero-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 9px;
   font-weight: 600;
   font-family: var(--font-heading);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.18);
-  padding: 3px 10px;
-  border-radius: 5px;
-  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 20px;
+  margin-bottom: 10px;
   width: fit-content;
-}
-
-.hero h1 {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0 0 4px;
   color: white;
 }
 
+.hero-badge svg {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+.hero h1 {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: white;
+  line-height: 1.2;
+}
+
 .hero-desc {
-  font-size: 12px;
-  opacity: 0.85;
-  line-height: 1.5;
-  margin: 0 0 12px;
+  font-size: 13px;
+  opacity: 0.9;
+  line-height: 1.55;
+  margin: 0;
   max-width: 480px;
+}
+
+.hero-desc strong {
+  color: #FDE68A;
+  font-weight: 700;
 }
 
 .hero-info {
@@ -169,11 +345,10 @@ h1, h2, h3 {
 
 /* Hero illustration */
 .hero-image {
-  width: 90px;
+  width: 110px;
   height: auto;
   display: block;
   flex-shrink: 0;
-  opacity: 0.9;
   align-self: flex-end;
 }
 
@@ -775,16 +950,18 @@ h1, h2, h3 {
    ══════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
   .hero { padding: 28px 0 0; }
+  .hero-logo-wrap { top: 20px; left: calc(50% - 400px + 28px); right: auto; }
+  .hero-logo { width: 200px; }
   .hero-inner {
     padding: 0 28px;
-    gap: 32px;
+    gap: 24px;
   }
-  .hero-badge { font-size: 10px; padding: 4px 12px; margin-bottom: 10px; }
-  .hero h1 { font-size: 26px; }
-  .hero-desc { font-size: 14px; line-height: 1.6; margin-bottom: 18px; }
+  .hero-badge { font-size: 10px; padding: 7px 16px; margin-bottom: 12px; }
+  .hero h1 { font-size: 30px; }
+  .hero-desc { font-size: 14px; line-height: 1.6; }
   .hero-info { padding: 16px 24px; gap: 20px; border-radius: 14px; margin-bottom: 12px; }
   .hero-field span { font-size: 15px; }
-  .hero-image { width: 180px; opacity: 1; }
+  .hero-image { width: 200px; }
 
   .survey-wrap { padding: 0 24px 120px; }
 
@@ -811,6 +988,20 @@ h1, h2, h3 {
   .face-label { font-size: 12px; }
 
   .submit-btn { padding: 18px; font-size: 17px; }
+}
+
+/* Hide heavy decorations on mobile */
+@media (max-width: 767px) {
+  .decor-hospital,
+  .decor-heart,
+  .decor-leaf-group,
+  .decor-plus {
+    display: none;
+  }
+  .decor-wave-lines {
+    transform: scale(0.7);
+    left: -100px;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
