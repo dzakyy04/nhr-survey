@@ -461,37 +461,43 @@ h1, h2, h3 {
   margin: 0 0 16px;
 }
 
-.guide-faces {
+.guide-stars {
   display: flex;
-  gap: 4px;
+  gap: 2px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.guide-face-item {
+.guide-star-item {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   text-align: center;
 }
 
-.guide-face-circle {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.guide-star-icons {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  gap: 0px;
 }
 
-.guide-face-label {
-  font-size: 9px;
+.guide-star-icons svg {
+  width: 12px;
+  height: 12px;
+}
+
+.guide-star-label {
+  font-size: 8px;
   font-weight: 600;
   line-height: 1.15;
+  word-break: break-word;
+  hyphens: auto;
 }
 
-.guide-face-points {
-  font-size: 9px;
+.guide-star-points {
+  font-size: 8px;
   color: var(--text-light);
   margin-top: auto;
 }
@@ -549,6 +555,84 @@ h1, h2, h3 {
   padding: 5px 16px;
   border-radius: 20px;
   white-space: nowrap;
+}
+
+/* ══════════════════════════════════════════════════════════
+   STAR RATING
+   ══════════════════════════════════════════════════════════ */
+.star-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.star-buttons {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+}
+
+.star-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s, background 0.2s;
+  position: relative;
+}
+
+.star-btn:hover {
+  background: rgba(251, 191, 36, 0.08);
+  transform: scale(1.12);
+}
+
+.star-btn:active {
+  transform: scale(0.9);
+}
+
+.star-btn .star-icon {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s;
+  filter: drop-shadow(0 0 0 transparent);
+}
+
+.star-btn.filled .star-icon {
+  transform: scale(1.1);
+  filter: drop-shadow(0 1px 4px rgba(245, 158, 11, 0.35));
+}
+
+.star-btn.exact .star-icon {
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 8px rgba(245, 158, 11, 0.45));
+}
+
+.star-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 22px;
+}
+
+.star-label-text {
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-heading);
+}
+
+.star-label-points {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.7;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 2px 8px;
+  border-radius: 10px;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1118,6 +1202,17 @@ h1, h2, h3 {
 }
 
 /* ══════════════════════════════════════════════════════════
+   RESPONSIVE — MOBILE (≤400px)
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 400px) {
+  .star-btn { width: 40px; height: 40px; }
+  .star-btn .star-icon { width: 22px; height: 22px; }
+  .guide-star-icons svg { width: 10px; height: 10px; }
+  .guide-star-label { font-size: 7px; }
+  .guide-star-points { font-size: 7px; }
+}
+
+/* ══════════════════════════════════════════════════════════
    RESPONSIVE — DESKTOP (≥768px)
    ══════════════════════════════════════════════════════════ */
 @media (min-width: 768px) {
@@ -1139,9 +1234,8 @@ h1, h2, h3 {
 
   .card { padding: 32px; margin-bottom: 14px; }
 
-  .guide-faces { gap: 16px; }
-  .guide-face-circle { width: 52px; height: 52px; }
-  .guide-face-label { font-size: 12px; }
+  .guide-stars { gap: 16px; }
+  .guide-star-label { font-size: 12px; }
 
   .section-card { padding: 22px 28px; margin: 22px 0 14px; gap: 18px; }
   .section-card h2 { font-size: 17px; }
@@ -1150,14 +1244,9 @@ h1, h2, h3 {
   .q-card { padding: 32px; margin-bottom: 14px; }
   .q-text { font-size: 16px; }
 
-  .face-row { gap: 12px; }
-  .face-btn {
-    padding: 16px 6px 12px;
-    min-height: 92px;
-    gap: 6px;
-    border-radius: 16px;
-  }
-  .face-label { font-size: 12px; }
+  .star-btn { width: 56px; height: 56px; }
+  .star-btn .star-icon { width: 32px; height: 32px; }
+  .star-label-text { font-size: 14px; }
 
   .submit-btn { padding: 18px; font-size: 17px; }
 }

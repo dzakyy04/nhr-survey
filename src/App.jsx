@@ -1,11 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Angry,
-  Frown,
-  Meh,
-  Smile,
-  Laugh,
+  Star,
   Check,
   CheckCircle2,
   Stethoscope,
@@ -45,13 +41,13 @@ function getTokenFromPath() {
   return null;
 }
 
-// Face icons: sad → happy, each with idle tint color
-const FACES = [
-  { value: 1, Icon: Angry, color: "#EF4444", bg: "#FEF2F2", idle: "#D4A0A0" },
-  { value: 2, Icon: Frown, color: "#F97316", bg: "#FFF7ED", idle: "#D4B48A" },
-  { value: 3, Icon: Meh, color: "#EAB308", bg: "#FEFCE8", idle: "#C0AD5C" },
-  { value: 4, Icon: Smile, color: "#1BBAAF", bg: "#F0FDFB", idle: "#7CC0B8" },
-  { value: 5, Icon: Laugh, color: "#22C55E", bg: "#F0FDF4", idle: "#7CC08A" },
+// Star rating colors per value
+const STAR_COLORS = [
+  { value: 1, color: "#EF4444", label: "Sangat Tidak Setuju" },
+  { value: 2, color: "#F97316", label: "Tidak Setuju" },
+  { value: 3, color: "#EAB308", label: "Netral" },
+  { value: 4, color: "#1BBAAF", label: "Setuju" },
+  { value: 5, color: "#22C55E", label: "Sangat Setuju" },
 ];
 
 /* ═══════════════════════════════════════════════════════════
@@ -212,6 +208,8 @@ function NoTokenPage() {
    QUESTION CARD
    ═══════════════════════════════════════════════════════════ */
 function QuestionCard({ q, value, onSelect }) {
+  const starInfo = value ? STAR_COLORS[value - 1] : null;
+
   return (
     <div className={`q-card ${value ? "answered" : ""}`} id={`q-${q.id}`}>
       {value && (
@@ -227,35 +225,50 @@ function QuestionCard({ q, value, onSelect }) {
 
       <p className="q-text">{q.question}</p>
 
-      <div className="face-row">
-        {FACES.map((face) => {
-          const sel = value === face.value;
-          return (
-            <motion.button
-              key={face.value}
-              type="button"
-              whileTap={{ scale: 0.88 }}
-              className={`face-btn ${sel ? "selected" : ""}`}
-              style={{
-                "--face-color": face.color,
-                "--face-bg": face.bg,
-                "--face-idle": face.idle,
-              }}
-              onClick={() => onSelect(q.id, face.value)}
-              aria-label={LIKERT_SCALE[face.value - 1].label}
-              aria-pressed={sel}
+      <div className="star-row">
+        <div className="star-buttons">
+          {STAR_COLORS.map((star) => {
+            const filled = value >= star.value;
+            const isExact = value === star.value;
+            return (
+              <motion.button
+                key={star.value}
+                type="button"
+                whileTap={{ scale: 0.85 }}
+                className={`star-btn ${filled ? "filled" : ""} ${isExact ? "exact" : ""}`}
+                onClick={() => onSelect(q.id, star.value)}
+                aria-label={star.label}
+                aria-pressed={isExact}
+              >
+                <Star
+                  size={28}
+                  className="star-icon"
+                  fill={filled ? "#FBBF24" : "none"}
+                  color={filled ? "#F59E0B" : "#D1D5DB"}
+                  strokeWidth={filled ? 1.5 : 1.4}
+                />
+              </motion.button>
+            );
+          })}
+        </div>
+        <AnimatePresence mode="wait">
+          {starInfo && (
+            <motion.div
+              key={value}
+              className="star-label"
+              style={{ color: starInfo.color }}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
             >
-              <face.Icon
-                size={26}
-                className="face-icon"
-                strokeWidth={sel ? 2.2 : 1.6}
-              />
-              <span className="face-label">
-                {LIKERT_SCALE[face.value - 1].label}
+              <span className="star-label-text">{starInfo.label}</span>
+              <span className="star-label-points">
+                {LIKERT_SCALE[value - 1].points} poin
               </span>
-            </motion.button>
-          );
-        })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -572,26 +585,31 @@ export default function App() {
         <div className="card guide-card">
           <p className="guide-title">Panduan Penilaian</p>
           <p className="guide-desc">
-            Pilih ekspresi wajah yang sesuai untuk setiap pertanyaan
+            Pilih jumlah bintang yang sesuai untuk setiap pertanyaan
           </p>
-          <div className="guide-faces">
-            {FACES.map((face) => {
-              const label = LIKERT_SCALE[face.value - 1];
+          <div className="guide-stars">
+            {STAR_COLORS.map((star) => {
+              const label = LIKERT_SCALE[star.value - 1];
               return (
-                <div key={face.value} className="guide-face-item">
-                  <div
-                    className="guide-face-circle"
-                    style={{ background: face.bg }}
-                  >
-                    <face.Icon size={22} color={face.color} strokeWidth={1.8} />
+                <div key={star.value} className="guide-star-item">
+                  <div className="guide-star-icons">
+                    {Array.from({ length: star.value }, (_, i) => (
+                      <Star
+                        key={i}
+                        size={14}
+                        fill="#FBBF24"
+                        color="#F59E0B"
+                        strokeWidth={1.5}
+                      />
+                    ))}
                   </div>
                   <span
-                    className="guide-face-label"
-                    style={{ color: face.color }}
+                    className="guide-star-label"
+                    style={{ color: star.color }}
                   >
                     {label.label}
                   </span>
-                  <span className="guide-face-points">{label.points} poin</span>
+                  <span className="guide-star-points">{label.points} poin</span>
                 </div>
               );
             })}
