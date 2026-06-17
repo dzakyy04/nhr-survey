@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
@@ -7,41 +7,21 @@ import {
   Stethoscope,
   HeartPulse,
   Loader2,
-  AlertTriangle,
-  ShieldX,
   ClipboardCheck,
-  RefreshCw,
-  WifiOff,
   Heart,
   Sparkles,
+  User,
+  IdCard,
+  MessageSquare,
+  AlertCircle,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
-import {
-  fetchTokenData,
-  fetchSurveyQuestions,
-  submitSurvey,
-  TokenError,
-} from "./services/api";
+import { fetchGrahaQuestions, submitGrahaSurvey } from "./services/api";
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
    ═══════════════════════════════════════════════════════════ */
 
-/**
- * Extract token from URL path.
- * e.g. "/abc123def456" → "abc123def456"
- *      "/some/path/abc123" → null (not a direct token)
- */
-function getTokenFromPath() {
-  const path = window.location.pathname.replace(/^\/+|\/+$/g, "");
-  // Token should be a non-empty string without slashes
-  if (path && !path.includes("/")) {
-    return path;
-  }
-  return null;
-}
-
-// Star rating colors per value
 const STAR_COLORS = [
   { value: 1, color: "#EF4444", label: "Sangat Tidak Setuju" },
   { value: 2, color: "#F97316", label: "Tidak Setuju" },
@@ -49,169 +29,6 @@ const STAR_COLORS = [
   { value: 4, color: "#1BBAAF", label: "Setuju" },
   { value: 5, color: "#22C55E", label: "Sangat Setuju" },
 ];
-
-/* ═══════════════════════════════════════════════════════════
-   FULL-PAGE STATE SCREENS
-   ═══════════════════════════════════════════════════════════ */
-
-/** Loading — shown while fetching token data */
-function LoadingPage() {
-  return (
-    <motion.div
-      className="state-page"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="state-content">
-        <motion.div
-          className="state-icon state-icon--loading"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
-        >
-          <Loader2 size={36} strokeWidth={1.8} />
-        </motion.div>
-        <h2>Mohon Tunggu</h2>
-        <p>Sedang memuat data Anda…</p>
-      </div>
-    </motion.div>
-  );
-}
-
-/** Error — token not found, network error, etc. */
-function ErrorPage({ code, message, onRetry }) {
-  const isNetwork = code === "NETWORK_ERROR";
-
-  return (
-    <motion.div
-      className="state-page"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.div
-        className="state-content"
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.35 }}
-      >
-        <div
-          className={`state-icon ${isNetwork ? "state-icon--warning" : "state-icon--error"}`}
-        >
-          {isNetwork ? (
-            <WifiOff size={36} strokeWidth={1.8} />
-          ) : (
-            <ShieldX size={36} strokeWidth={1.8} />
-          )}
-        </div>
-        <h2>{isNetwork ? "Gagal Memuat" : "Link Tidak Valid"}</h2>
-        <p>{message}</p>
-        {isNetwork && onRetry && (
-          <button className="state-btn" onClick={onRetry}>
-            <RefreshCw size={16} strokeWidth={2} />
-            Coba Lagi
-          </button>
-        )}
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/** Completed — survey already submitted for this token */
-function CompletedPage() {
-  return (
-    <motion.div
-      className="success-page"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-    >
-      {/* Background decorations */}
-      <div className="success-decor">
-        <div className="success-decor-circle success-decor-circle-1" />
-        <div className="success-decor-circle success-decor-circle-2" />
-        <div className="success-decor-plus success-decor-plus-1">+</div>
-        <div className="success-decor-plus success-decor-plus-2">+</div>
-        <div className="success-decor-dots" />
-      </div>
-
-      <motion.div
-        className="success-content"
-        initial={{ opacity: 0, scale: 0.9, y: 24 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{
-          delay: 0.15,
-          duration: 0.45,
-          type: "spring",
-          stiffness: 120,
-        }}
-      >
-        <motion.div
-          className="success-icon completed-icon"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{
-            delay: 0.3,
-            type: "spring",
-            stiffness: 200,
-            damping: 12,
-          }}
-        >
-          <ClipboardCheck size={44} strokeWidth={1.6} />
-        </motion.div>
-
-        <motion.div
-          className="success-sparkle"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45 }}
-        >
-          <CheckCircle2 size={14} strokeWidth={2} />
-          <span>Survei Sudah Tercatat</span>
-        </motion.div>
-
-        <h2>Survei Sudah Diisi</h2>
-        <p className="success-main-text">
-          Anda sudah pernah mengisi survei ini sebelumnya. Terima kasih atas
-          partisipasi Anda dalam membantu meningkatkan kualitas pelayanan kami.
-        </p>
-
-        <div className="success-message">
-          <Heart size={15} strokeWidth={2} />
-          <span>Semoga lekas sehat dan pemulihan berjalan lancar</span>
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-/** No Token — root page or invalid path */
-function NoTokenPage() {
-  return (
-    <motion.div
-      className="state-page"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      <motion.div
-        className="state-content"
-        initial={{ opacity: 0, scale: 0.95, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.35 }}
-      >
-        <div className="state-icon state-icon--warning">
-          <AlertTriangle size={36} strokeWidth={1.8} />
-        </div>
-        <h2>Token Diperlukan</h2>
-        <p>
-          Silakan scan barcode yang diberikan oleh petugas rumah sakit untuk
-          mengakses formulir survei.
-        </p>
-      </motion.div>
-    </motion.div>
-  );
-}
 
 /* ═══════════════════════════════════════════════════════════
    QUESTION CARD
@@ -227,12 +44,10 @@ function QuestionCard({ q, value, onSelect }) {
         </div>
       )}
 
-      <div className="q-top">
+      <div className="q-header-inline">
         <span className="q-num">{q.number}.</span>
-        <span className="q-cat">{q.category}</span>
+        <p className="q-text">{q.question}</p>
       </div>
-
-      <p className="q-text">{q.question}</p>
 
       <div className="star-row">
         <div className="star-buttons">
@@ -284,58 +99,32 @@ function QuestionCard({ q, value, onSelect }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   MAIN APP
+   MAIN GRAHA APP — Single Page
    ═══════════════════════════════════════════════════════════ */
-export default function App() {
-  // Token from URL path
-  const token = useMemo(getTokenFromPath, []);
-
-  // API fetch states
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null); // { code, message }
-  const [patient, setPatient] = useState(null);
+export default function GrahaApp() {
+  // Patient identity (self-entered)
+  const [nama, setNama] = useState("");
+  const [norm, setNorm] = useState("");
 
   // Questions from API
   const [questions, setQuestions] = useState({ prem: [], prom: [] });
+  const [questionsLoading, setQuestionsLoading] = useState(true);
+  const [questionsError, setQuestionsError] = useState(null);
 
   // Survey states
   const [answers, setAnswers] = useState({});
+  const [catatan, setCatatan] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  // Fetch patient data + questions in parallel
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Questions are always fetched; token data only when token exists
-      const [qs, patientData] = await Promise.all([
-        fetchSurveyQuestions(),
-        token ? fetchTokenData(token) : Promise.resolve(null),
-      ]);
-
-      setQuestions(qs);
-      setPatient(patientData);
-    } catch (err) {
-      if (err instanceof TokenError) {
-        setError({ code: err.code, message: err.message });
-      } else {
-        setError({
-          code: "NETWORK_ERROR",
-          message:
-            "Tidak dapat memuat data. Silakan periksa koneksi internet Anda dan coba lagi.",
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
+  // Fetch questions on mount
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    fetchGrahaQuestions()
+      .then((qs) => setQuestions(qs))
+      .catch((err) => setQuestionsError(err.message))
+      .finally(() => setQuestionsLoading(false));
+  }, []);
 
   // Survey logic
   const premQuestions = questions.prem;
@@ -351,9 +140,10 @@ export default function App() {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const canSubmit = !!patient && answered === total && total > 0;
+  const identityFilled = nama.trim().length > 0 && norm.trim().length > 0;
+  const canSubmit = identityFilled && answered === total && total > 0;
 
-  // Handle submit — send answers to API
+  // Submit
   const handleSubmit = useCallback(async () => {
     if (!canSubmit || submitting) return;
 
@@ -361,31 +151,79 @@ export default function App() {
     setSubmitError(null);
 
     try {
-      await submitSurvey(token, patient.regpasien_no, answers);
+      await submitGrahaSurvey(
+        norm.trim(),
+        nama.trim(),
+        answers,
+        catatan || null,
+      );
       setSubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
       setSubmitError(err.message);
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, patient, answers]);
+  }, [canSubmit, submitting, nama, norm, answers, catatan]);
 
   /* ─── Loading ─── */
-  if (loading) {
-    return <LoadingPage />;
-  }
-
-  /* ─── Error states ─── */
-  if (error) {
-    if (error.code === "COMPLETED") {
-      return <CompletedPage />;
-    }
+  if (questionsLoading) {
     return (
-      <ErrorPage code={error.code} message={error.message} onRetry={loadData} />
+      <motion.div
+        className="state-page"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="state-content">
+          <motion.div
+            className="state-icon state-icon--loading"
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
+          >
+            <Loader2 size={36} strokeWidth={1.8} />
+          </motion.div>
+          <h2>Mohon Tunggu</h2>
+          <p>Sedang memuat pertanyaan survei…</p>
+        </div>
+      </motion.div>
     );
   }
 
-  /* ─── Success (submitted) ─── */
+  /* ─── Error loading questions ─── */
+  if (questionsError) {
+    return (
+      <motion.div
+        className="state-page"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <div className="state-content">
+          <div className="state-icon state-icon--error">
+            <AlertCircle size={36} strokeWidth={1.8} />
+          </div>
+          <h2>Gagal Memuat</h2>
+          <p>{questionsError}</p>
+          <button
+            className="state-btn"
+            onClick={() => {
+              setQuestionsError(null);
+              setQuestionsLoading(true);
+              fetchGrahaQuestions()
+                .then((qs) => setQuestions(qs))
+                .catch((err) => setQuestionsError(err.message))
+                .finally(() => setQuestionsLoading(false));
+            }}
+          >
+            Coba Lagi
+          </button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  /* ─── Success ─── */
   if (submitted) {
     return (
       <motion.div
@@ -394,7 +232,6 @@ export default function App() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
-        {/* Background decorations */}
         <div className="success-decor">
           <div className="success-decor-circle success-decor-circle-1" />
           <div className="success-decor-circle success-decor-circle-2" />
@@ -414,7 +251,6 @@ export default function App() {
             stiffness: 120,
           }}
         >
-          {/* Animated check icon */}
           <motion.div
             className="success-icon"
             initial={{ scale: 0 }}
@@ -429,7 +265,6 @@ export default function App() {
             <CheckCircle2 size={44} strokeWidth={1.6} />
           </motion.div>
 
-          {/* Sparkle badges */}
           <motion.div
             className="success-sparkle"
             initial={{ opacity: 0, y: 8 }}
@@ -443,34 +278,25 @@ export default function App() {
           <h2>Terima Kasih!</h2>
           <p className="success-main-text">
             Jawaban Anda sangat berarti untuk meningkatkan kualitas pelayanan
-            rumah sakit kami.
+            Graha Eksekutif kami.
           </p>
 
-          {/* Patient info summary */}
-          {patient && (
-            <div className="success-patient-card">
-              <div className="success-patient-row">
-                <span className="success-patient-label">Nama</span>
-                <span className="success-patient-value">
-                  {patient.pasien_nama}
-                </span>
-              </div>
-              <div className="success-patient-row">
-                <span className="success-patient-label">Pelayanan</span>
-                <span className="success-patient-value">
-                  {patient.pelayanan}
-                </span>
-              </div>
-              <div className="success-patient-row">
-                <span className="success-patient-label">
-                  Pertanyaan Dijawab
-                </span>
-                <span className="success-patient-value success-patient-value--highlight">
-                  {answered}/{total}
-                </span>
-              </div>
+          <div className="success-patient-card">
+            <div className="success-patient-row">
+              <span className="success-patient-label">Nama</span>
+              <span className="success-patient-value">{nama}</span>
             </div>
-          )}
+            <div className="success-patient-row">
+              <span className="success-patient-label">No. RM</span>
+              <span className="success-patient-value">{norm}</span>
+            </div>
+            <div className="success-patient-row">
+              <span className="success-patient-label">Pertanyaan Dijawab</span>
+              <span className="success-patient-value success-patient-value--highlight">
+                {answered}/{total}
+              </span>
+            </div>
+          </div>
 
           <div className="success-message">
             <Heart size={15} strokeWidth={2} />
@@ -481,7 +307,7 @@ export default function App() {
     );
   }
 
-  /* ─── Survey form ─── */
+  /* ─── Survey form (single page) ─── */
   return (
     <>
       {/* ── Sticky progress strip ── */}
@@ -491,7 +317,6 @@ export default function App() {
 
       {/* ── Hero header ── */}
       <header className="hero">
-        {/* Background decorations */}
         <div className="hero-decor">
           <div className="decor-blur" />
           <div className="decor-plus decor-plus-1">+</div>
@@ -532,7 +357,6 @@ export default function App() {
           </svg>
         </div>
 
-        {/* Logo top-right */}
         <div className="hero-logo-wrap">
           <img src="/logo-rsmh.png" alt="Logo RSMH" className="hero-logo" />
         </div>
@@ -546,8 +370,8 @@ export default function App() {
             <h1>Survei Kepuasan Pasien</h1>
             <p className="hero-desc">
               Jawablah pertanyaan berikut berdasarkan pengalaman Anda selama
-              menjalani perawatan di Rumah Sakit Mohammad Hoesin. Jawaban Anda
-              bersifat <strong>rahasia</strong>.
+              mendapatkan pelayanan di Graha Eksekutif RS Mohammad Hoesin.
+              Jawaban Anda bersifat <strong>rahasia</strong>.
             </p>
           </div>
 
@@ -561,45 +385,43 @@ export default function App() {
 
       {/* ── Main content ── */}
       <main className="survey-wrap">
-        {/* Patient info */}
-        {patient && (
-          <div className="card patient-card">
-            <div className="patient-field patient-field--full">
-              <label>Nama Lengkap</label>
-              <span className="value">{patient.pasien_nama}</span>
+        {/* ── Patient identity inputs ── */}
+        <div className="card graha-identity-inline">
+          <p className="graha-inline-title">
+            <User size={16} strokeWidth={2.5} />
+            Data Pasien
+          </p>
+          <div className="graha-inline-fields">
+            <div className="graha-input-group">
+              <input
+                id="graha-norm"
+                type="text"
+                placeholder=" "
+                value={norm}
+                onChange={(e) => setNorm(e.target.value)}
+                autoComplete="off"
+              />
+              <label htmlFor="graha-norm">
+                <IdCard size={18} strokeWidth={2.2} />
+                No. Rekam Medis (RM)
+              </label>
             </div>
-            <div className="patient-row">
-              <div className="patient-field">
-                <label>No. RM</label>
-                <span className="value">{patient.norm}</span>
-              </div>
-              <div className="patient-field">
-                <label>No. Registrasi</label>
-                <span className="value">{patient.regpasien_no}</span>
-              </div>
-            </div>
-            <div className="patient-row">
-              <div className="patient-field patient-field--teal">
-                <label>Pelayanan</label>
-                <span className="value">{patient.pelayanan}</span>
-              </div>
-              <div className="patient-field patient-field--teal">
-                <label>Penyakit</label>
-                <span className="value">{patient.penyakit}</span>
-              </div>
+            <div className="graha-input-group">
+              <input
+                id="graha-nama"
+                type="text"
+                placeholder=" "
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                autoComplete="name"
+              />
+              <label htmlFor="graha-nama">
+                <User size={18} strokeWidth={2.2} />
+                Nama Lengkap
+              </label>
             </div>
           </div>
-        )}
-
-        {!token && (
-          <div className="card no-token-banner">
-            <AlertTriangle size={18} strokeWidth={2} />
-            <p>
-              Silakan scan barcode yang diberikan petugas rumah sakit untuk
-              dapat mengirim survei.
-            </p>
-          </div>
-        )}
+        </div>
 
         {/* Guide */}
         <div className="card guide-card">
@@ -682,6 +504,22 @@ export default function App() {
           />
         ))}
 
+        {/* ── Catatan Lainnya ── */}
+        <div className="card graha-catatan-card">
+          <div className="graha-catatan-header">
+            <MessageSquare size={18} strokeWidth={2} />
+            <span>Catatan Lainnya</span>
+            <span className="graha-catatan-optional">(Opsional)</span>
+          </div>
+          <textarea
+            className="graha-catatan-textarea"
+            placeholder="Tuliskan saran, keluhan, atau masukan lainnya di sini..."
+            value={catatan}
+            onChange={(e) => setCatatan(e.target.value)}
+            rows={4}
+          />
+        </div>
+
         {/* ── Submit ── */}
         <div className="card submit-section">
           <p className="submit-count">
@@ -699,8 +537,8 @@ export default function App() {
               ? "Mengirim..."
               : canSubmit
                 ? "Kirim Survei"
-                : !patient
-                  ? "Scan barcode untuk mengirim survei"
+                : !identityFilled
+                  ? "Isi Nama dan No. RM terlebih dahulu"
                   : `Jawab semua pertanyaan (${answered}/${total})`}
           </motion.button>
         </div>

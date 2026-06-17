@@ -1266,6 +1266,187 @@ h1, h2, h3 {
 }
 
 /* ══════════════════════════════════════════════════════════
+   GRAHA — INLINE QUESTION HEADER (number + text side by side)
+   ══════════════════════════════════════════════════════════ */
+.q-header-inline {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 18px;
+  padding-right: 32px;
+}
+
+.q-header-inline .q-num {
+  flex-shrink: 0;
+  line-height: 1.65;
+}
+
+.q-header-inline .q-text {
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   GRAHA EKSEKUTIF — INLINE IDENTITY CARD
+   ══════════════════════════════════════════════════════════ */
+.graha-identity-inline {
+  margin-top: -6px;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border-left: 4px solid var(--color-primary);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.graha-inline-title {
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graha-inline-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .graha-inline-fields {
+    flex-direction: row;
+    gap: 16px;
+  }
+  .graha-inline-fields .graha-input-group {
+    flex: 1;
+  }
+}
+
+/* Input group (shared) */
+.graha-input-group {
+  position: relative;
+}
+
+.graha-input-group input {
+  width: 100%;
+  padding: 24px 16px 10px 16px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--surface);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.graha-input-group label {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: #94a3b8;
+  pointer-events: none;
+  transform-origin: left center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+}
+
+.graha-input-group label svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.graha-input-group input:focus ~ label,
+.graha-input-group input:not(:placeholder-shown) ~ label {
+  top: 13px;
+  transform: translateY(-50%) scale(0.85);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.graha-input-group input:focus ~ label svg,
+.graha-input-group input:not(:placeholder-shown) ~ label svg {
+  color: var(--color-primary);
+}
+
+.graha-input-group input:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.graha-input-group input:focus {
+  background: #ffffff;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(27, 186, 175, 0.1);
+}
+
+/* ══════════════════════════════════════════════════════════
+   GRAHA EKSEKUTIF — CATATAN CARD
+   ══════════════════════════════════════════════════════════ */
+.graha-catatan-card {
+  margin-top: 18px;
+}
+
+.graha-catatan-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.graha-catatan-header svg {
+  color: var(--color-primary);
+}
+
+.graha-catatan-optional {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-light);
+  font-family: var(--font-body);
+}
+
+.graha-catatan-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--surface);
+  resize: vertical;
+  min-height: 100px;
+  line-height: 1.6;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.graha-catatan-textarea::placeholder {
+  color: var(--text-light);
+}
+
+.graha-catatan-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(27, 186, 175, 0.1);
+  background: var(--surface);
+}
+
+
+/* ══════════════════════════════════════════════════════════
    ACCESSIBILITY
    ══════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {

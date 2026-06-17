@@ -143,6 +143,85 @@ export async function submitSurvey(token, regpasienNo, answers) {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   GRAHA EKSEKUTIF API
+   ═══════════════════════════════════════════════════════════ */
+
+/**
+ * Fetch all survey questions for Graha Eksekutif from ORDS.
+ * Returns { prem: [...], prom: [...] } — each item normalized for QuestionCard.
+ * Note: Graha questions may have null kategori.
+ *
+ * @returns {Promise<{ prem: Array, prom: Array }>}
+ */
+export async function fetchGrahaQuestions() {
+  const url = `${BASE_URL}/pertanyaan/graha`;
+
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gagal memuat pertanyaan (${res.status})`);
+  }
+
+  const json = await res.json();
+  const items = (json.items ?? []).map(normalizeQuestion);
+
+  return {
+    prem: items.filter((q) => q.jenis === "prem"),
+    prom: items.filter((q) => q.jenis === "prom"),
+  };
+}
+
+/**
+ * Submit Graha Eksekutif survey answers in a single POST.
+ * Backend checks 1x per NORM per day, inserts all answers,
+ * and stores catatan on the first row.
+ *
+ * @param {string} norm — patient medical record number (self-entered)
+ * @param {string} pasienNama — patient name (self-entered)
+ * @param {Record<string, number>} answers — { "prem_1": 4, "prom_5": 5, ... }
+ * @param {string} [catatan] — optional free text notes
+ * @returns {Promise<void>}
+ */
+export async function submitGrahaSurvey(norm, pasienNama, answers, catatan) {
+  const entries = Object.entries(answers);
+
+  if (entries.length === 0) {
+    throw new Error("Tidak ada jawaban untuk dikirim");
+  }
+
+  // Build jawaban array
+  const jawaban = entries.map(([id, nilai]) => {
+    const pertanyaanId = Number(id.split("_").pop());
+    return { pertanyaan_id: pertanyaanId, nilai };
+  });
+
+  const res = await fetch(`${BASE_URL}/jawaban/graha`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      norm,
+      pasien_nama: pasienNama,
+      catatan: catatan || null,
+      jawaban,
+    }),
+  });
+
+  if (res.status === 409) {
+    throw new Error("Anda sudah mengisi survei hari ini, terima kasih.");
+  }
+
+  if (!res.ok) {
+    throw new Error(`Gagal mengirim survei (${res.status})`);
+  }
+}
+
 /**
  * Custom error class for token-related errors.
  */
