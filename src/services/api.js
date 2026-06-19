@@ -176,6 +176,38 @@ export async function fetchGrahaQuestions() {
 }
 
 /**
+ * Fetch all pelayanan (unit) options for Graha Eksekutif.
+ * Handles ORDS pagination automatically to fetch all items.
+ *
+ * @returns {Promise<Array<{ bagian_id: number, bagian_nama: string }>>}
+ */
+export async function fetchGrahaPelayanan() {
+  let allItems = [];
+  let url = `${BASE_URL}/pelayanan/graha/`;
+
+  while (url) {
+    const res = await fetch(url, {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gagal memuat data pelayanan (${res.status})`);
+    }
+
+    const json = await res.json();
+    const items = json.items ?? [];
+    allItems = allItems.concat(items);
+
+    // Check for next page
+    const nextLink = (json.links ?? []).find((l) => l.rel === "next");
+    url = nextLink ? nextLink.href : null;
+  }
+
+  return allItems;
+}
+
+/**
  * Submit Graha Eksekutif survey answers in a single POST.
  * Backend checks 1x per NORM per day, inserts all answers,
  * and stores catatan on the first row.
@@ -186,7 +218,7 @@ export async function fetchGrahaQuestions() {
  * @param {string} [catatan] — optional free text notes
  * @returns {Promise<void>}
  */
-export async function submitGrahaSurvey(norm, pasienNama, answers, catatan) {
+export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagianId) {
   const entries = Object.entries(answers);
 
   if (entries.length === 0) {
@@ -209,6 +241,7 @@ export async function submitGrahaSurvey(norm, pasienNama, answers, catatan) {
       norm,
       pasien_nama: pasienNama,
       catatan: catatan || null,
+      bagian_id: bagianId || null,
       jawaban,
     }),
   });

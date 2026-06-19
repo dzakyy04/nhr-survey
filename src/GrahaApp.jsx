@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
@@ -14,9 +14,13 @@ import {
   IdCard,
   MessageSquare,
   AlertCircle,
+  Building2,
+  Search,
+  ChevronDown,
+  X,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
-import { fetchGrahaQuestions, submitGrahaSurvey } from "./services/api";
+import { fetchGrahaQuestions, submitGrahaSurvey, fetchGrahaPelayanan } from "./services/api";
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -99,12 +103,150 @@ function QuestionCard({ q, value, onSelect }) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   SEARCHABLE DROPDOWN
+   ═══════════════════════════════════════════════════════════ */
+function SearchableDropdown({ options, value, onChange, loading, placeholder }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const wrapperRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return options;
+    const term = search.toLowerCase();
+    return options.filter((o) => o.bagian_nama.toLowerCase().includes(term));
+  }, [options, search]);
+
+  const selected = options.find((o) => o.bagian_id === value);
+
+  // Close on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setIsOpen(false);
+        setSearch("");
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const handleToggle = () => {
+    if (loading) return;
+    setIsOpen((prev) => !prev);
+    setSearch("");
+    if (!isOpen) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
+  const handleSelect = (item) => {
+    onChange(item.bagian_id);
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    onChange(null);
+    setIsOpen(false);
+    setSearch("");
+  };
+
+  return (
+    <div className="graha-dropdown-wrap" ref={wrapperRef}>
+      <div
+        className={`graha-dropdown-trigger ${isOpen ? "open" : ""} ${value ? "has-value" : ""}`}
+        onClick={handleToggle}
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        id="graha-pelayanan"
+      >
+        <Building2 size={18} strokeWidth={2.2} className="graha-dropdown-icon" />
+        <div className="graha-dropdown-display">
+          {selected ? (
+            <>
+              <span className="graha-dropdown-label-float">Unit Pelayanan</span>
+              <span className="graha-dropdown-value">{selected.bagian_nama}</span>
+            </>
+          ) : (
+            <span className="graha-dropdown-placeholder">
+              {loading ? "Memuat data..." : placeholder || "Pilih Unit Pelayanan"}
+            </span>
+          )}
+        </div>
+        <div className="graha-dropdown-actions">
+          {value && (
+            <button type="button" className="graha-dropdown-clear" onClick={handleClear} aria-label="Hapus pilihan">
+              <X size={14} strokeWidth={2.5} />
+            </button>
+          )}
+          <ChevronDown
+            size={18}
+            strokeWidth={2}
+            className={`graha-dropdown-chevron ${isOpen ? "rotated" : ""}`}
+          />
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="graha-dropdown-panel"
+            initial={{ opacity: 0, y: -6, scaleY: 0.96 }}
+            animate={{ opacity: 1, y: 0, scaleY: 1 }}
+            exit={{ opacity: 0, y: -6, scaleY: 0.96 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            <div className="graha-dropdown-search">
+              <Search size={16} strokeWidth={2} />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Cari unit pelayanan..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
+            <ul className="graha-dropdown-list" role="listbox">
+              {filtered.length === 0 ? (
+                <li className="graha-dropdown-empty">Tidak ditemukan</li>
+              ) : (
+                filtered.map((item) => (
+                  <li
+                    key={item.bagian_id}
+                    className={`graha-dropdown-item ${item.bagian_id === value ? "selected" : ""}`}
+                    onClick={() => handleSelect(item)}
+                    role="option"
+                    aria-selected={item.bagian_id === value}
+                  >
+                    <span>{item.bagian_nama}</span>
+                    {item.bagian_id === value && <Check size={16} strokeWidth={2.5} />}
+                  </li>
+                ))
+              )}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════
    MAIN GRAHA APP — Single Page
    ═══════════════════════════════════════════════════════════ */
 export default function GrahaApp() {
   // Patient identity (self-entered)
   const [nama, setNama] = useState("");
   const [norm, setNorm] = useState("");
+
+  // Pelayanan (unit) from API
+  const [pelayananList, setPelayananList] = useState([]);
+  const [pelayananLoading, setPelayananLoading] = useState(true);
+  const [selectedBagianId, setSelectedBagianId] = useState(null);
 
   // Questions from API
   const [questions, setQuestions] = useState({ prem: [], prom: [] });
@@ -124,6 +266,11 @@ export default function GrahaApp() {
       .then((qs) => setQuestions(qs))
       .catch((err) => setQuestionsError(err.message))
       .finally(() => setQuestionsLoading(false));
+
+    fetchGrahaPelayanan()
+      .then((list) => setPelayananList(list))
+      .catch(() => {}) // silently fail — dropdown will just be empty
+      .finally(() => setPelayananLoading(false));
   }, []);
 
   // Survey logic
@@ -140,7 +287,7 @@ export default function GrahaApp() {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const identityFilled = nama.trim().length > 0 && norm.trim().length > 0;
+  const identityFilled = nama.trim().length > 0 && norm.trim().length > 0 && selectedBagianId !== null;
   const canSubmit = identityFilled && answered === total && total > 0;
 
   // Submit
@@ -156,6 +303,7 @@ export default function GrahaApp() {
         nama.trim(),
         answers,
         catatan || null,
+        selectedBagianId,
       );
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -164,7 +312,7 @@ export default function GrahaApp() {
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, nama, norm, answers, catatan]);
+  }, [canSubmit, submitting, nama, norm, answers, catatan, selectedBagianId]);
 
   /* ─── Loading ─── */
   if (questionsLoading) {
@@ -291,6 +439,12 @@ export default function GrahaApp() {
               <span className="success-patient-value">{norm}</span>
             </div>
             <div className="success-patient-row">
+              <span className="success-patient-label">Unit Pelayanan</span>
+              <span className="success-patient-value">
+                {pelayananList.find((p) => p.bagian_id === selectedBagianId)?.bagian_nama ?? "-"}
+              </span>
+            </div>
+            <div className="success-patient-row">
               <span className="success-patient-label">Pertanyaan Dijawab</span>
               <span className="success-patient-value success-patient-value--highlight">
                 {answered}/{total}
@@ -392,34 +546,43 @@ export default function GrahaApp() {
             Data Pasien
           </p>
           <div className="graha-inline-fields">
-            <div className="graha-input-group">
-              <input
-                id="graha-norm"
-                type="text"
-                placeholder=" "
-                value={norm}
-                onChange={(e) => setNorm(e.target.value)}
-                autoComplete="off"
-              />
-              <label htmlFor="graha-norm">
-                <IdCard size={18} strokeWidth={2.2} />
-                No. Rekam Medis (RM)
-              </label>
+            <div className="graha-inline-row">
+              <div className="graha-input-group">
+                <input
+                  id="graha-norm"
+                  type="text"
+                  placeholder=" "
+                  value={norm}
+                  onChange={(e) => setNorm(e.target.value)}
+                  autoComplete="off"
+                />
+                <label htmlFor="graha-norm">
+                  <IdCard size={18} strokeWidth={2.2} />
+                  No. Rekam Medis (RM)
+                </label>
+              </div>
+              <div className="graha-input-group">
+                <input
+                  id="graha-nama"
+                  type="text"
+                  placeholder=" "
+                  value={nama}
+                  onChange={(e) => setNama(e.target.value)}
+                  autoComplete="name"
+                />
+                <label htmlFor="graha-nama">
+                  <User size={18} strokeWidth={2.2} />
+                  Nama Lengkap
+                </label>
+              </div>
             </div>
-            <div className="graha-input-group">
-              <input
-                id="graha-nama"
-                type="text"
-                placeholder=" "
-                value={nama}
-                onChange={(e) => setNama(e.target.value)}
-                autoComplete="name"
-              />
-              <label htmlFor="graha-nama">
-                <User size={18} strokeWidth={2.2} />
-                Nama Lengkap
-              </label>
-            </div>
+            <SearchableDropdown
+              options={pelayananList}
+              value={selectedBagianId}
+              onChange={setSelectedBagianId}
+              loading={pelayananLoading}
+              placeholder="Pilih Unit Pelayanan"
+            />
           </div>
         </div>
 
@@ -538,7 +701,7 @@ export default function GrahaApp() {
               : canSubmit
                 ? "Kirim Survei"
                 : !identityFilled
-                  ? "Isi Nama dan No. RM terlebih dahulu"
+                  ? "Lengkapi data pasien terlebih dahulu"
                   : `Jawab semua pertanyaan (${answered}/${total})`}
           </motion.button>
         </div>
