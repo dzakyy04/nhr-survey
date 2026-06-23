@@ -50,7 +50,9 @@ function QuestionCard({ q, value, onSelect }) {
 
       <div className="q-header-inline">
         <span className="q-num">{q.number}.</span>
-        <p className="q-text">{q.question}</p>
+        <p className="q-text">
+          {q.question} <span style={{ color: "#ef4444" }}>*</span>
+        </p>
       </div>
 
       <div className="star-row">
@@ -167,12 +169,18 @@ function SearchableDropdown({ options, value, onChange, loading, placeholder }) 
         <div className="graha-dropdown-display">
           {selected ? (
             <>
-              <span className="graha-dropdown-label-float">Unit Pelayanan</span>
+              <span className="graha-dropdown-label-float">
+                Unit Pelayanan <span style={{ color: "#ef4444" }}>*</span>
+              </span>
               <span className="graha-dropdown-value">{selected.bagian_nama}</span>
             </>
           ) : (
             <span className="graha-dropdown-placeholder">
-              {loading ? "Memuat data..." : placeholder || "Pilih Unit Pelayanan"}
+              {loading ? "Memuat data..." : (
+                <>
+                  {placeholder || "Pilih Unit Pelayanan"} <span style={{ color: "#ef4444" }}>*</span>
+                </>
+              )}
             </span>
           )}
         </div>
@@ -287,7 +295,7 @@ export default function GrahaApp() {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const identityFilled = nama.trim().length > 0 && norm.trim().length > 0 && selectedBagianId !== null;
+  const identityFilled = nama.trim().length > 0 && selectedBagianId !== null;
   const canSubmit = identityFilled && answered === total && total > 0;
 
   // Submit
@@ -436,7 +444,7 @@ export default function GrahaApp() {
             </div>
             <div className="success-patient-row">
               <span className="success-patient-label">No. RM</span>
-              <span className="success-patient-value">{norm}</span>
+              <span className="success-patient-value">{norm || "-"}</span>
             </div>
             <div className="success-patient-row">
               <span className="success-patient-label">Unit Pelayanan</span>
@@ -558,7 +566,7 @@ export default function GrahaApp() {
                 />
                 <label htmlFor="graha-norm">
                   <IdCard size={18} strokeWidth={2.2} />
-                  No. Rekam Medis (RM)
+                  No. Rekam Medis
                 </label>
               </div>
               <div className="graha-input-group">
@@ -572,7 +580,7 @@ export default function GrahaApp() {
                 />
                 <label htmlFor="graha-nama">
                   <User size={18} strokeWidth={2.2} />
-                  Nama Lengkap
+                  Nama Lengkap <span style={{ color: "#ef4444" }}>*</span>
                 </label>
               </div>
             </div>
@@ -672,7 +680,6 @@ export default function GrahaApp() {
           <div className="graha-catatan-header">
             <MessageSquare size={18} strokeWidth={2} />
             <span>Catatan Lainnya</span>
-            <span className="graha-catatan-optional">(Opsional)</span>
           </div>
           <textarea
             className="graha-catatan-textarea"

@@ -246,10 +246,6 @@ export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagi
     }),
   });
 
-  if (res.status === 409) {
-    throw new Error("Anda sudah mengisi survei hari ini, terima kasih.");
-  }
-
   if (!res.ok) {
     throw new Error(`Gagal mengirim survei (${res.status})`);
   }
