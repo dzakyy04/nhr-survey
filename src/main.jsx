@@ -3,13 +3,25 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import GrahaApp from "./GrahaApp.jsx";
+import GrahaLanding from "./GrahaLanding.jsx";
 
-// Route: /graha-eksekutif → GrahaApp, otherwise → App
-const isGraha = window.location.pathname
+// Normalize path: lowercase, no trailing slashes
+const path = window.location.pathname
   .replace(/\/+$/, "")
-  .toLowerCase()
-  .includes("/graha-eksekutif");
+  .toLowerCase();
+
+// Route: determine which component to render
+let component;
+if (path.endsWith("/graha-eksekutif/ranap")) {
+  component = <GrahaApp tipe="ranap" />;
+} else if (path.endsWith("/graha-eksekutif/rajal")) {
+  component = <GrahaApp tipe="rajal" />;
+} else if (path.endsWith("/graha-eksekutif")) {
+  component = <GrahaLanding />;
+} else {
+  component = <App />;
+}
 
 createRoot(document.getElementById("root")).render(
-  <StrictMode>{isGraha ? <GrahaApp /> : <App />}</StrictMode>,
+  <StrictMode>{component}</StrictMode>,
 );

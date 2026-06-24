@@ -18,6 +18,7 @@ import {
   Search,
   ChevronDown,
   X,
+  ArrowLeft,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
 import { fetchGrahaQuestions, submitGrahaSurvey, fetchGrahaPelayanan } from "./services/api";
@@ -246,7 +247,22 @@ function SearchableDropdown({ options, value, onChange, loading, placeholder }) 
 /* ═══════════════════════════════════════════════════════════
    MAIN GRAHA APP — Single Page
    ═══════════════════════════════════════════════════════════ */
-export default function GrahaApp() {
+
+const TIPE_CONFIG = {
+  ranap: {
+    label: "Rawat Inap",
+    heroDesc: "Jawablah pertanyaan berikut berdasarkan pengalaman Anda selama mendapatkan pelayanan rawat inap di Graha Eksekutif RS Mohammad Hoesin.",
+    successMsg: "Jawaban Anda sangat berarti untuk meningkatkan kualitas pelayanan rawat inap Graha Eksekutif kami.",
+  },
+  rajal: {
+    label: "Rawat Jalan",
+    heroDesc: "Jawablah pertanyaan berikut berdasarkan pengalaman Anda selama mendapatkan pelayanan rawat jalan di Graha Eksekutif RS Mohammad Hoesin.",
+    successMsg: "Jawaban Anda sangat berarti untuk meningkatkan kualitas pelayanan rawat jalan Graha Eksekutif kami.",
+  },
+};
+
+export default function GrahaApp({ tipe = "ranap" }) {
+  const config = TIPE_CONFIG[tipe] || TIPE_CONFIG.ranap;
   // Patient identity (self-entered)
   const [nama, setNama] = useState("");
   const [norm, setNorm] = useState("");
@@ -270,16 +286,16 @@ export default function GrahaApp() {
 
   // Fetch questions on mount
   useEffect(() => {
-    fetchGrahaQuestions()
+    fetchGrahaQuestions(tipe)
       .then((qs) => setQuestions(qs))
       .catch((err) => setQuestionsError(err.message))
       .finally(() => setQuestionsLoading(false));
 
-    fetchGrahaPelayanan()
+    fetchGrahaPelayanan(tipe)
       .then((list) => setPelayananList(list))
       .catch(() => {}) // silently fail — dropdown will just be empty
       .finally(() => setPelayananLoading(false));
-  }, []);
+  }, [tipe]);
 
   // Survey logic
   const premQuestions = questions.prem;
@@ -312,6 +328,7 @@ export default function GrahaApp() {
         answers,
         catatan || null,
         selectedBagianId,
+        tipe,
       );
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -320,7 +337,7 @@ export default function GrahaApp() {
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, nama, norm, answers, catatan, selectedBagianId]);
+  }, [canSubmit, submitting, nama, norm, answers, catatan, selectedBagianId, tipe]);
 
   /* ─── Loading ─── */
   if (questionsLoading) {
@@ -366,7 +383,7 @@ export default function GrahaApp() {
             onClick={() => {
               setQuestionsError(null);
               setQuestionsLoading(true);
-              fetchGrahaQuestions()
+              fetchGrahaQuestions(tipe)
                 .then((qs) => setQuestions(qs))
                 .catch((err) => setQuestionsError(err.message))
                 .finally(() => setQuestionsLoading(false));
@@ -433,8 +450,7 @@ export default function GrahaApp() {
 
           <h2>Terima Kasih!</h2>
           <p className="success-main-text">
-            Jawaban Anda sangat berarti untuk meningkatkan kualitas pelayanan
-            Graha Eksekutif kami.
+            {config.successMsg}
           </p>
 
           <div className="success-patient-card">
@@ -445,6 +461,10 @@ export default function GrahaApp() {
             <div className="success-patient-row">
               <span className="success-patient-label">No. RM</span>
               <span className="success-patient-value">{norm || "-"}</span>
+            </div>
+            <div className="success-patient-row">
+              <span className="success-patient-label">Jenis Layanan</span>
+              <span className="success-patient-value">{config.label}</span>
             </div>
             <div className="success-patient-row">
               <span className="success-patient-label">Unit Pelayanan</span>
@@ -479,6 +499,10 @@ export default function GrahaApp() {
 
       {/* ── Hero header ── */}
       <header className="hero">
+        {/* Back button */}
+        <a href="/graha-eksekutif" className="graha-back-btn">
+          <ArrowLeft size={18} strokeWidth={2.2} />
+        </a>
         <div className="hero-decor">
           <div className="decor-blur" />
           <div className="decor-plus decor-plus-1">+</div>
@@ -527,13 +551,12 @@ export default function GrahaApp() {
           <div className="hero-text">
             <div className="hero-badge">
               <ClipboardCheck size={16} strokeWidth={2} />
-              <span>Patient Reported Measurement</span>
+              <span>{config.label}</span>
             </div>
             <h1>Survei Kepuasan Pasien</h1>
             <p className="hero-desc">
-              Jawablah pertanyaan berikut berdasarkan pengalaman Anda selama
-              mendapatkan pelayanan di Graha Eksekutif RS Mohammad Hoesin.
-              Jawaban Anda bersifat <strong>rahasia</strong>.
+              {config.heroDesc}
+              {" "}Jawaban Anda bersifat <strong>rahasia</strong>.
             </p>
           </div>
 

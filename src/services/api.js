@@ -152,10 +152,11 @@ export async function submitSurvey(token, regpasienNo, answers) {
  * Returns { prem: [...], prom: [...] } — each item normalized for QuestionCard.
  * Note: Graha questions may have null kategori.
  *
+ * @param {"ranap" | "rajal"} tipe — type of care
  * @returns {Promise<{ prem: Array, prom: Array }>}
  */
-export async function fetchGrahaQuestions() {
-  const url = `${BASE_URL}/pertanyaan/graha`;
+export async function fetchGrahaQuestions(tipe = "ranap") {
+  const url = `${BASE_URL}/pertanyaan/graha/${tipe}`;
 
   const res = await fetch(url, {
     method: "GET",
@@ -179,11 +180,13 @@ export async function fetchGrahaQuestions() {
  * Fetch all pelayanan (unit) options for Graha Eksekutif.
  * Handles ORDS pagination automatically to fetch all items.
  *
+ * @param {"ranap" | "rajal"} tipe — type of care
  * @returns {Promise<Array<{ bagian_id: number, bagian_nama: string }>>}
  */
-export async function fetchGrahaPelayanan() {
+export async function fetchGrahaPelayanan(tipe = "rajal") {
   let allItems = [];
-  let url = `${BASE_URL}/pelayanan/graha/`;
+  // Both use /pelayanan/graha/{tipe}
+  let url = `${BASE_URL}/pelayanan/graha/${tipe}`;
 
   while (url) {
     const res = await fetch(url, {
@@ -209,16 +212,18 @@ export async function fetchGrahaPelayanan() {
 
 /**
  * Submit Graha Eksekutif survey answers in a single POST.
- * Backend checks 1x per NORM per day, inserts all answers,
- * and stores catatan on the first row.
+ * Backend inserts all answers and stores catatan on the first row.
+ * The tipe field determines whether UNIT is stored as graha_ranap or graha_rajal.
  *
  * @param {string} norm — patient medical record number (self-entered)
  * @param {string} pasienNama — patient name (self-entered)
  * @param {Record<string, number>} answers — { "prem_1": 4, "prom_5": 5, ... }
  * @param {string} [catatan] — optional free text notes
+ * @param {number} [bagianId] — selected pelayanan unit ID
+ * @param {"ranap" | "rajal"} [tipe] — type of care
  * @returns {Promise<void>}
  */
-export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagianId) {
+export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagianId, tipe) {
   const entries = Object.entries(answers);
 
   if (entries.length === 0) {
@@ -242,6 +247,7 @@ export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagi
       pasien_nama: pasienNama,
       catatan: catatan || null,
       bagian_id: bagianId || null,
+      tipe: tipe || "ranap",
       jawaban,
     }),
   });
