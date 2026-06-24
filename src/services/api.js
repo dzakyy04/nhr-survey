@@ -1,6 +1,71 @@
 // API service for NHR Survey — Oracle APEX REST (ORDS)
 
-const BASE_URL = import.meta.env.API_BASE_URL || "";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.API_BASE_URL || "";
+const OAUTH_CLIENT_ID = import.meta.env.VITE_ORDS_CLIENT_ID || "";
+const OAUTH_CLIENT_SECRET = import.meta.env.VITE_ORDS_CLIENT_SECRET || "";
+// Default OAuth Token URL assumes BASE_URL ends with /nhr
+const OAUTH_TOKEN_URL = import.meta.env.VITE_ORDS_TOKEN_URL || BASE_URL.replace(/\/nhr\/?$/, '/oauth/token');
+
+// In-memory token cache
+let cachedToken = null;
+let tokenExpiresAt = 0;
+
+/**
+ * Fetch OAuth 2.0 Access Token from ORDS.
+ * Caches the token in memory until it expires.
+ */
+async function getAccessToken() {
+  if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
+    console.warn("VITE_ORDS_CLIENT_ID atau VITE_ORDS_CLIENT_SECRET belum diatur. Mencoba request tanpa token...");
+    return null;
+  }
+
+  // Jika token masih valid (buffer 5 menit), gunakan cache
+  if (cachedToken && Date.now() < tokenExpiresAt - 300000) {
+    return cachedToken;
+  }
+
+  const credentials = btoa(`${OAUTH_CLIENT_ID}:${OAUTH_CLIENT_SECRET}`);
+
+  try {
+    const res = await fetch(OAUTH_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Authorization": `Basic ${credentials}`
+      },
+      body: "grant_type=client_credentials"
+    });
+
+    if (!res.ok) {
+      throw new Error(`Gagal mendapatkan akses token (${res.status})`);
+    }
+
+    const data = await res.json();
+    cachedToken = data.access_token;
+    tokenExpiresAt = Date.now() + (data.expires_in * 1000);
+    return cachedToken;
+  } catch (error) {
+    console.error("OAuth Token Error:", error);
+    throw error;
+  }
+}
+
+/**
+ * Helper to build headers with Authorization if token is available
+ */
+async function getAuthHeaders(additionalHeaders = {}) {
+  const headers = { Accept: "application/json", ...additionalHeaders };
+  try {
+    const token = await getAccessToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  } catch (e) {
+    // Ignore error here, let the actual request fail with 401 if token is required
+  }
+  return headers;
+}
 
 /**
  * Normalize a raw ORDS pertanyaan item into the shape
@@ -26,11 +91,9 @@ function normalizeQuestion(item) {
  */
 export async function fetchSurveyQuestions() {
   const url = `${BASE_URL}/pertanyaan/`;
+  const headers = await getAuthHeaders();
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  const res = await fetch(url, { method: "GET", headers });
 
   if (!res.ok) {
     throw new Error(`Gagal memuat pertanyaan (${res.status})`);
@@ -50,25 +113,12 @@ export async function fetchSurveyQuestions() {
  * Response is always a Collection Query: { items: [...], hasMore, count, ... }
  *
  * @param {string} token — 32-char hex token from URL path
- * @returns {Promise<{
- *   nhr_token_id: number,
- *   token: string,
- *   norm: string,
- *   regpasien_no: string,
- *   pasien_nama: string,
- *   status: string,
- *   pelayanan: string,
- *   penyakit: string,
- *   created: string
- * }>}
  */
 export async function fetchTokenData(token) {
   const url = `${BASE_URL}/tokens/${encodeURIComponent(token)}`;
+  const headers = await getAuthHeaders();
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  const res = await fetch(url, { method: "GET", headers });
 
   if (res.status === 404) {
     throw new TokenError("Token tidak ditemukan", "NOT_FOUND");
@@ -79,8 +129,6 @@ export async function fetchTokenData(token) {
   }
 
   const json = await res.json();
-
-  // ORDS always wraps results in items[]
   const data = (json.items ?? [])[0];
 
   if (!data) {
@@ -99,8 +147,6 @@ export async function fetchTokenData(token) {
 
 /**
  * Submit all survey answers in a single POST.
- * Backend inserts all answers AND marks the token as completed
- * in one atomic transaction.
  *
  * @param {string} token — 32-char hex token
  * @param {string} regpasienNo — patient registration number
@@ -114,19 +160,16 @@ export async function submitSurvey(token, regpasienNo, answers) {
     throw new Error("Tidak ada jawaban untuk dikirim");
   }
 
-  // Build jawaban array
   const jawaban = entries.map(([id, nilai]) => {
-    // id format: "prem_1" or "prom_12" → extract pertanyaan_id after last underscore
     const pertanyaanId = Number(id.split("_").pop());
     return { pertanyaan_id: pertanyaanId, nilai };
   });
 
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+
   const res = await fetch(`${BASE_URL}/jawaban/`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+    headers,
     body: JSON.stringify({
       token,
       regpasien_no: regpasienNo,
@@ -149,19 +192,15 @@ export async function submitSurvey(token, regpasienNo, answers) {
 
 /**
  * Fetch all survey questions for Graha Eksekutif from ORDS.
- * Returns { prem: [...], prom: [...] } — each item normalized for QuestionCard.
- * Note: Graha questions may have null kategori.
  *
  * @param {"ranap" | "rajal"} tipe — type of care
  * @returns {Promise<{ prem: Array, prom: Array }>}
  */
 export async function fetchGrahaQuestions(tipe = "ranap") {
   const url = `${BASE_URL}/pertanyaan/graha/${tipe}`;
+  const headers = await getAuthHeaders();
 
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  const res = await fetch(url, { method: "GET", headers });
 
   if (!res.ok) {
     throw new Error(`Gagal memuat pertanyaan (${res.status})`);
@@ -178,21 +217,17 @@ export async function fetchGrahaQuestions(tipe = "ranap") {
 
 /**
  * Fetch all pelayanan (unit) options for Graha Eksekutif.
- * Handles ORDS pagination automatically to fetch all items.
  *
  * @param {"ranap" | "rajal"} tipe — type of care
  * @returns {Promise<Array<{ bagian_id: number, bagian_nama: string }>>}
  */
 export async function fetchGrahaPelayanan(tipe = "rajal") {
   let allItems = [];
-  // Both use /pelayanan/graha/{tipe}
   let url = `${BASE_URL}/pelayanan/graha/${tipe}`;
 
   while (url) {
-    const res = await fetch(url, {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
+    const headers = await getAuthHeaders();
+    const res = await fetch(url, { method: "GET", headers });
 
     if (!res.ok) {
       throw new Error(`Gagal memuat data pelayanan (${res.status})`);
@@ -202,7 +237,6 @@ export async function fetchGrahaPelayanan(tipe = "rajal") {
     const items = json.items ?? [];
     allItems = allItems.concat(items);
 
-    // Check for next page
     const nextLink = (json.links ?? []).find((l) => l.rel === "next");
     url = nextLink ? nextLink.href : null;
   }
@@ -212,15 +246,13 @@ export async function fetchGrahaPelayanan(tipe = "rajal") {
 
 /**
  * Submit Graha Eksekutif survey answers in a single POST.
- * Backend inserts all answers and stores catatan on the first row.
- * The tipe field determines whether UNIT is stored as graha_ranap or graha_rajal.
  *
- * @param {string} norm — patient medical record number (self-entered)
- * @param {string} pasienNama — patient name (self-entered)
- * @param {Record<string, number>} answers — { "prem_1": 4, "prom_5": 5, ... }
- * @param {string} [catatan] — optional free text notes
- * @param {number} [bagianId] — selected pelayanan unit ID
- * @param {"ranap" | "rajal"} [tipe] — type of care
+ * @param {string} norm — patient medical record number
+ * @param {string} pasienNama — patient name
+ * @param {Record<string, number>} answers
+ * @param {string} [catatan]
+ * @param {number} [bagianId]
+ * @param {"ranap" | "rajal"} [tipe]
  * @returns {Promise<void>}
  */
 export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagianId, tipe) {
@@ -230,18 +262,16 @@ export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagi
     throw new Error("Tidak ada jawaban untuk dikirim");
   }
 
-  // Build jawaban array
   const jawaban = entries.map(([id, nilai]) => {
     const pertanyaanId = Number(id.split("_").pop());
     return { pertanyaan_id: pertanyaanId, nilai };
   });
 
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+
   const res = await fetch(`${BASE_URL}/jawaban/graha`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+    headers,
     body: JSON.stringify({
       norm,
       pasien_nama: pasienNama,
@@ -261,10 +291,6 @@ export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagi
  * Custom error class for token-related errors.
  */
 export class TokenError extends Error {
-  /**
-   * @param {string} message
-   * @param {"NOT_FOUND" | "COMPLETED" | "SERVER_ERROR" | "NETWORK_ERROR"} code
-   */
   constructor(message, code) {
     super(message);
     this.name = "TokenError";
@@ -279,10 +305,9 @@ export class TokenError extends Error {
  */
 export async function fetchPasienByNorm(norm) {
   const url = `${BASE_URL}/pasien/${norm}`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  const headers = await getAuthHeaders();
+  
+  const res = await fetch(url, { method: "GET", headers });
   if (!res.ok) return null;
   const json = await res.json();
   const data = (json.items ?? [])[0];
