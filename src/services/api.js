@@ -1,68 +1,17 @@
 // API service for NHR Survey — Oracle APEX REST (ORDS)
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.API_BASE_URL || "";
-const OAUTH_CLIENT_ID = import.meta.env.VITE_ORDS_CLIENT_ID || "";
-const OAUTH_CLIENT_SECRET = import.meta.env.VITE_ORDS_CLIENT_SECRET || "";
-// Default OAuth Token URL assumes BASE_URL ends with /nhr
-const OAUTH_TOKEN_URL = import.meta.env.VITE_ORDS_TOKEN_URL || BASE_URL.replace(/\/nhr\/?$/, '/oauth/token');
-
-// In-memory token cache
-let cachedToken = null;
-let tokenExpiresAt = 0;
+const API_KEY = import.meta.env.VITE_API_KEY || "";
 
 /**
- * Fetch OAuth 2.0 Access Token from ORDS.
- * Caches the token in memory until it expires.
- */
-async function getAccessToken() {
-  if (!OAUTH_CLIENT_ID || !OAUTH_CLIENT_SECRET) {
-    console.warn("VITE_ORDS_CLIENT_ID atau VITE_ORDS_CLIENT_SECRET belum diatur. Mencoba request tanpa token...");
-    return null;
-  }
-
-  // Jika token masih valid (buffer 5 menit), gunakan cache
-  if (cachedToken && Date.now() < tokenExpiresAt - 300000) {
-    return cachedToken;
-  }
-
-  const credentials = btoa(`${OAUTH_CLIENT_ID}:${OAUTH_CLIENT_SECRET}`);
-
-  try {
-    const res = await fetch(OAUTH_TOKEN_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "Authorization": `Basic ${credentials}`
-      },
-      body: "grant_type=client_credentials"
-    });
-
-    if (!res.ok) {
-      throw new Error(`Gagal mendapatkan akses token (${res.status})`);
-    }
-
-    const data = await res.json();
-    cachedToken = data.access_token;
-    tokenExpiresAt = Date.now() + (data.expires_in * 1000);
-    return cachedToken;
-  } catch (error) {
-    console.error("OAuth Token Error:", error);
-    throw error;
-  }
-}
-
-/**
- * Helper to build headers with Authorization if token is available
+ * Helper to build headers with Authorization API Key
  */
 async function getAuthHeaders(additionalHeaders = {}) {
   const headers = { Accept: "application/json", ...additionalHeaders };
-  try {
-    const token = await getAccessToken();
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
-  } catch (e) {
-    // Ignore error here, let the actual request fail with 401 if token is required
+  if (API_KEY) {
+    headers["Authorization"] = `Bearer ${API_KEY}`;
+  } else {
+    console.warn("VITE_API_KEY belum diatur di file .env!");
   }
   return headers;
 }
