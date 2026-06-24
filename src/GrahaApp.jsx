@@ -18,7 +18,6 @@ import {
   Search,
   ChevronDown,
   X,
-  ArrowLeft,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
 import { fetchGrahaQuestions, submitGrahaSurvey, fetchGrahaPelayanan } from "./services/api";
@@ -499,10 +498,6 @@ export default function GrahaApp({ tipe = "ranap" }) {
 
       {/* ── Hero header ── */}
       <header className="hero">
-        {/* Back button */}
-        <a href="/graha-eksekutif" className="graha-back-btn">
-          <ArrowLeft size={18} strokeWidth={2.2} />
-        </a>
         <div className="hero-decor">
           <div className="decor-blur" />
           <div className="decor-plus decor-plus-1">+</div>
