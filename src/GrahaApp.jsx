@@ -20,7 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
-import { fetchGrahaQuestions, submitGrahaSurvey, fetchGrahaPelayanan } from "./services/api";
+import { fetchGrahaQuestions, submitGrahaSurvey, fetchGrahaPelayanan, fetchPasienByNorm } from "./services/api";
 
 /* ═══════════════════════════════════════════════════════════
    CONSTANTS
@@ -295,6 +295,24 @@ export default function GrahaApp({ tipe = "ranap" }) {
       .catch(() => {}) // silently fail — dropdown will just be empty
       .finally(() => setPelayananLoading(false));
   }, [tipe]);
+
+  // Autofill patient name based on norm (requires minimum 8 characters)
+  useEffect(() => {
+    if (!norm || norm.length < 8) return;
+    
+    const handler = setTimeout(async () => {
+      try {
+        const pasienNama = await fetchPasienByNorm(norm);
+        if (pasienNama) {
+          setNama(pasienNama);
+        }
+      } catch (err) {
+        // silently fail if patient not found
+      }
+    }, 600);
+
+    return () => clearTimeout(handler);
+  }, [norm]);
 
   // Survey logic
   const premQuestions = questions.prem;

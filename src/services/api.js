@@ -271,3 +271,20 @@ export class TokenError extends Error {
     this.code = code;
   }
 }
+
+/**
+ * Fetch patient name by NORM
+ * @param {string} norm 
+ * @returns {Promise<string|null>} patient name or null if not found
+ */
+export async function fetchPasienByNorm(norm) {
+  const url = `${BASE_URL}/pasien/${norm}`;
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return null;
+  const json = await res.json();
+  const data = (json.items ?? [])[0];
+  return data ? data.pasien_nama : null;
+}
