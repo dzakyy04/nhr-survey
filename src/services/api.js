@@ -49,7 +49,7 @@ export async function fetchSurveyQuestions() {
   }
 
   const json = await res.json();
-  const items = (json.items ?? []).map(normalizeQuestion);
+  const items = (json.data ?? []).map(normalizeQuestion);
 
   return {
     prem: items.filter((q) => q.jenis === "prem"),
@@ -78,7 +78,7 @@ export async function fetchTokenData(token) {
   }
 
   const json = await res.json();
-  const data = (json.items ?? [])[0];
+  const data = (json.data ?? [])[0];
 
   if (!data) {
     throw new TokenError("Token tidak ditemukan", "NOT_FOUND");
@@ -156,7 +156,7 @@ export async function fetchGrahaQuestions(tipe = "ranap") {
   }
 
   const json = await res.json();
-  const items = (json.items ?? []).map(normalizeQuestion);
+  const items = (json.data ?? []).map(normalizeQuestion);
 
   return {
     prem: items.filter((q) => q.jenis === "prem"),
@@ -183,7 +183,7 @@ export async function fetchGrahaPelayanan(tipe = "rajal") {
     }
 
     const json = await res.json();
-    const items = json.items ?? [];
+    const items = json.data ?? [];
     allItems = allItems.concat(items);
 
     const nextLink = (json.links ?? []).find((l) => l.rel === "next");
@@ -259,6 +259,6 @@ export async function fetchPasienByNorm(norm) {
   const res = await fetch(url, { method: "GET", headers });
   if (!res.ok) return null;
   const json = await res.json();
-  const data = (json.items ?? [])[0];
+  const data = (json.data ?? [])[0];
   return data ? data.pasien_nama : null;
 }
