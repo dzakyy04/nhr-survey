@@ -237,6 +237,71 @@ export async function submitGrahaSurvey(norm, pasienNama, answers, catatan, bagi
 }
 
 /**
+ * Fetch all survey questions for Graha DPJP from ORDS.
+ * Returns a flat array (no prem/prom split).
+ *
+ * @returns {Promise<Array>}
+ */
+export async function fetchGrahaDpjpQuestions() {
+  const url = `${BASE_URL}/pertanyaan/graha/dpjp`;
+  const headers = await getAuthHeaders();
+
+  const res = await fetch(url, { method: "GET", headers });
+
+  if (!res.ok) {
+    throw new Error(`Gagal memuat pertanyaan (${res.status})`);
+  }
+
+  const json = await res.json();
+  const items = (json.data ?? []).map((item) => ({
+    id: `general_${item.pertanyaan_id}`,
+    number: item.nomor,
+    question: item.pertanyaan,
+  }));
+
+  return items;
+}
+
+/**
+ * Submit Graha DPJP survey answers.
+ *
+ * @param {string} nip — NIP dokter
+ * @param {string} namaDokter — nama dokter
+ * @param {Record<string, number>} answers
+ * @param {string|null} [catatan]
+ * @returns {Promise<void>}
+ */
+export async function submitGrahaDpjpSurvey(nip, namaDokter, answers, catatan) {
+  const entries = Object.entries(answers);
+
+  if (entries.length === 0) {
+    throw new Error("Tidak ada jawaban untuk dikirim");
+  }
+
+  const jawaban = entries.map(([id, nilai]) => {
+    const pertanyaanId = Number(id.split("_").pop());
+    return { pertanyaan_id: pertanyaanId, nilai };
+  });
+
+  const headers = await getAuthHeaders({ "Content-Type": "application/json" });
+
+  const res = await fetch(`${BASE_URL}/jawaban/graha/dpjp`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      nip,
+      nama_dokter: namaDokter,
+      catatan: catatan || null,
+      jawaban,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Gagal mengirim survei (${res.status})`);
+  }
+}
+
+/**
  * Custom error class for token-related errors.
  */
 export class TokenError extends Error {
