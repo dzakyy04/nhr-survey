@@ -1399,6 +1399,260 @@ h1, h2, h3 {
   box-shadow: 0 0 0 3px rgba(27, 186, 175, 0.1);
 }
 
+/* ── Departemen Select Dropdown ── */
+.graha-dept-select {
+  position: relative;
+}
+
+/* Override parent .graha-input-group label rules */
+.graha-dept-select .graha-dept-label {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  pointer-events: none;
+  transform-origin: left center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  margin: 0;
+  background: transparent;
+  padding: 0;
+  z-index: 2;
+}
+
+/* Float label up when value selected */
+.graha-dept-select.has-value .graha-dept-label {
+  top: 10px;
+  transform: translateY(-50%) scale(0.85);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.graha-dept-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--surface, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--font-body);
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  min-height: 48px;
+  outline: none;
+}
+
+.graha-dept-trigger.has-value {
+  padding: 20px 14px 6px 14px;
+  color: var(--text, #1e293b);
+  border-color: var(--color-primary);
+  background: #ffffff;
+}
+
+.graha-dept-trigger:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.graha-dept-trigger.has-value:hover {
+  background: #ffffff;
+}
+
+.graha-dept-trigger-icon {
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+  width: 16px;
+  height: 16px;
+}
+
+.graha-dept-trigger.has-value .graha-dept-trigger-icon {
+  color: var(--color-primary);
+}
+
+.graha-dept-trigger-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graha-dept-chevron {
+  flex-shrink: 0;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.graha-dept-chevron.open {
+  transform: rotate(180deg);
+}
+
+.graha-dept-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid var(--border-light, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+  overflow: hidden;
+}
+
+.graha-dept-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light, #e2e8f0);
+}
+
+.graha-dept-search-wrap svg {
+  color: var(--text-muted, #94a3b8);
+  flex-shrink: 0;
+}
+
+.graha-dept-select .graha-dept-search {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 0.875rem;
+  background: transparent;
+  color: var(--text, #1e293b);
+  font-family: var(--font-body);
+  padding: 0;
+  min-height: auto;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.graha-dept-select .graha-dept-search::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+.graha-dept-select .graha-dept-search:focus {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.graha-dept-list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.graha-dept-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.graha-dept-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+}
+
+.graha-dept-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.graha-dept-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  color: var(--text, #1e293b);
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.graha-dept-option:hover {
+  background: rgba(27, 186, 175, 0.08);
+}
+
+.graha-dept-option.active {
+  background: rgba(27, 186, 175, 0.12);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.graha-dept-option.active svg {
+  color: var(--color-primary);
+}
+
+/* ── Gender Toggle ── */
+.graha-gender-group {
+  width: 100%;
+}
+
+.graha-gender-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 10px;
+}
+
+.graha-gender-options {
+  display: flex;
+  gap: 10px;
+}
+
+.graha-gender-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text, #1e293b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.graha-gender-btn input[type="radio"] {
+  display: none;
+}
+
+.graha-gender-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.graha-gender-btn.active {
+  border-color: var(--color-primary);
+  background: rgba(27, 186, 175, 0.08);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 /* ══════════════════════════════════════════════════════════
    GRAHA EKSEKUTIF — CATATAN CARD
    ══════════════════════════════════════════════════════════ */

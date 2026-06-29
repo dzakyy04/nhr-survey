@@ -263,15 +263,37 @@ export async function fetchGrahaDpjpQuestions() {
 }
 
 /**
+ * Fetch list of active doctor divisions for DPJP form.
+ *
+ * @returns {Promise<Array<{id: number, nama: string}>>}
+ */
+export async function fetchGrahaDpjpDivisi() {
+  const url = `${BASE_URL}/divisi/dpjp`;
+  const headers = await getAuthHeaders();
+
+  const res = await fetch(url, { method: "GET", headers });
+
+  if (!res.ok) {
+    throw new Error(`Gagal memuat divisi (${res.status})`);
+  }
+
+  const json = await res.json();
+  return (json.data ?? [])
+    .filter((item) => item.divisi)
+    .map((item) => ({ id: item.organization_id, nama: item.divisi }));
+}
+
+/**
  * Submit Graha DPJP survey answers.
  *
- * @param {string} nip — NIP dokter
- * @param {string} namaDokter — nama dokter
+ * @param {number} organizationId — organization_id divisi
+ * @param {string} divisi — nama divisi
+ * @param {string} jenisKelamin — 'L' atau 'P'
  * @param {Record<string, number>} answers
  * @param {string|null} [catatan]
  * @returns {Promise<void>}
  */
-export async function submitGrahaDpjpSurvey(nip, namaDokter, answers, catatan) {
+export async function submitGrahaDpjpSurvey(organizationId, divisi, jenisKelamin, answers, catatan) {
   const entries = Object.entries(answers);
 
   if (entries.length === 0) {
@@ -289,8 +311,9 @@ export async function submitGrahaDpjpSurvey(nip, namaDokter, answers, catatan) {
     method: "POST",
     headers,
     body: JSON.stringify({
-      nip,
-      nama_dokter: namaDokter,
+      organization_id: organizationId,
+      divisi,
+      jenis_kelamin: jenisKelamin,
       catatan: catatan || null,
       jawaban,
     }),

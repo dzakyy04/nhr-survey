@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Star,
@@ -13,9 +13,12 @@ import {
   Stethoscope,
   BadgeCheck,
   UserCog,
+  ChevronDown,
+  Search,
+  Building2,
 } from "lucide-react";
 import { LIKERT_SCALE } from "./data/surveyQuestions";
-import { fetchGrahaDpjpQuestions, submitGrahaDpjpSurvey } from "./services/api";
+import { fetchGrahaDpjpQuestions, fetchGrahaDpjpDivisi, submitGrahaDpjpSurvey } from "./services/api";
 import { useEffect } from "react";
 
 /* ═══════════════════════════════════════════════════════════
@@ -104,9 +107,13 @@ function QuestionCard({ q, value, onSelect }) {
    MAIN DPJP APP
    ═══════════════════════════════════════════════════════════ */
 export default function GrahaDpjpApp() {
-  // DPJP identity
-  const [nip, setNip] = useState("");
-  const [nama, setNama] = useState("");
+  // DPJP identity — divisi + jenis kelamin
+  const [divisi, setDivisi] = useState(null);
+  const [deptList, setDeptList] = useState([]);
+  const [deptOpen, setDeptOpen] = useState(false);
+  const [deptSearch, setDeptSearch] = useState("");
+  const deptRef = useRef(null);
+  const [jenisKelamin, setJenisKelamin] = useState("");
 
   // Questions from API
   const [questions, setQuestions] = useState([]);
@@ -120,13 +127,35 @@ export default function GrahaDpjpApp() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
 
-  // Fetch questions on mount
+  // Fetch questions + divisi on mount
   useEffect(() => {
     fetchGrahaDpjpQuestions()
       .then((qs) => setQuestions(qs))
       .catch((err) => setQuestionsError(err.message))
       .finally(() => setQuestionsLoading(false));
+
+    fetchGrahaDpjpDivisi()
+      .then((list) => setDeptList(list))
+      .catch(() => {});
   }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (deptRef.current && !deptRef.current.contains(e.target)) {
+        setDeptOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Filtered dept list
+  const filteredDepts = useMemo(() => {
+    if (!deptSearch.trim()) return deptList;
+    const q = deptSearch.toLowerCase();
+    return deptList.filter((d) => d.nama.toLowerCase().includes(q));
+  }, [deptList, deptSearch]);
 
   // Survey logic
   const starTotal = questions.length;
@@ -139,7 +168,7 @@ export default function GrahaDpjpApp() {
     setAnswers((prev) => ({ ...prev, [id]: val }));
   }, []);
 
-  const identityFilled = nip.trim().length > 0 && nama.trim().length > 0;
+  const identityFilled = divisi !== null && jenisKelamin.length > 0;
   const canSubmit = identityFilled && answered === total && total > 0;
 
   // Submit
@@ -151,8 +180,9 @@ export default function GrahaDpjpApp() {
 
     try {
       await submitGrahaDpjpSurvey(
-        nip.trim(),
-        nama.trim(),
+        divisi.id,
+        divisi.nama,
+        jenisKelamin,
         answers,
         catatan || null,
       );
@@ -163,7 +193,7 @@ export default function GrahaDpjpApp() {
     } finally {
       setSubmitting(false);
     }
-  }, [canSubmit, submitting, nip, nama, answers, catatan]);
+  }, [canSubmit, submitting, divisi, jenisKelamin, answers, catatan]);
 
   /* ─── Loading ─── */
   if (questionsLoading) {
@@ -281,12 +311,12 @@ export default function GrahaDpjpApp() {
 
           <div className="success-patient-card">
             <div className="success-patient-row">
-              <span className="success-patient-label">NIP</span>
-              <span className="success-patient-value">{nip}</span>
+              <span className="success-patient-label">Divisi</span>
+              <span className="success-patient-value">{divisi?.nama}</span>
             </div>
             <div className="success-patient-row">
-              <span className="success-patient-label">Nama DPJP</span>
-              <span className="success-patient-value">{nama}</span>
+              <span className="success-patient-label">Jenis Kelamin</span>
+              <span className="success-patient-value">{jenisKelamin === 'L' ? 'Laki-laki' : 'Perempuan'}</span>
             </div>
             <div className="success-patient-row">
               <span className="success-patient-label">Pertanyaan Dijawab</span>
@@ -384,7 +414,7 @@ export default function GrahaDpjpApp() {
 
       {/* ── Main content ── */}
       <main className="survey-wrap">
-        {/* ── DPJP identity inputs ── */}
+        {/* ── DPJP identity — divisi + jenis kelamin ── */}
         <div className="card graha-identity-inline">
           <p className="graha-inline-title">
             <UserCog size={16} strokeWidth={2.5} />
@@ -392,34 +422,76 @@ export default function GrahaDpjpApp() {
           </p>
           <div className="graha-inline-fields">
             <div className="graha-inline-row">
-              <div className="graha-input-group">
-                <input
-                  id="dpjp-nip"
-                  type="text"
-                  placeholder=" "
-                  value={nip}
-                  onChange={(e) => setNip(e.target.value)}
-                  autoComplete="off"
-                  inputMode="numeric"
-                />
-                <label htmlFor="dpjp-nip">
-                  <BadgeCheck size={18} strokeWidth={2.2} />
-                  NIP <span style={{ color: "#ef4444" }}>*</span>
+              <div className={`graha-input-group graha-dept-select ${divisi ? "has-value" : ""}`} ref={deptRef}>
+                <button
+                  type="button"
+                  className={`graha-dept-trigger ${divisi ? "has-value" : ""}`}
+                  onClick={() => { setDeptOpen((o) => !o); setDeptSearch(""); }}
+                  id="dpjp-divisi"
+                >
+                  <span className="graha-dept-trigger-text">
+                    {divisi?.nama || ""}
+                  </span>
+                  <ChevronDown size={16} className={`graha-dept-chevron ${deptOpen ? "open" : ""}`} />
+                </button>
+                <label className="graha-dept-label">
+                  <Building2 style={{ width: 16, height: 16 }} />
+                  Divisi <span style={{ color: "#ef4444" }}>*</span>
                 </label>
+                <AnimatePresence>
+                  {deptOpen && (
+                    <motion.div
+                      className="graha-dept-dropdown"
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.18 }}
+                    >
+                      <div className="graha-dept-search-wrap">
+                        <Search size={14} strokeWidth={2} />
+                        <input
+                          type="text"
+                          className="graha-dept-search"
+                          placeholder="Cari divisi..."
+                          value={deptSearch}
+                          onChange={(e) => setDeptSearch(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="graha-dept-list">
+                        {filteredDepts.length === 0 && (
+                          <div className="graha-dept-empty">Divisi tidak ditemukan</div>
+                        )}
+                        {filteredDepts.map((d) => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            className={`graha-dept-option ${divisi?.id === d.id ? "active" : ""}`}
+                            onClick={() => { setDivisi(d); setDeptOpen(false); }}
+                          >
+                            {divisi?.id === d.id && <Check size={14} strokeWidth={2.5} />}
+                            <span>{d.nama}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <div className="graha-input-group">
-                <input
-                  id="dpjp-nama"
-                  type="text"
-                  placeholder=" "
-                  value={nama}
-                  onChange={(e) => setNama(e.target.value)}
-                  autoComplete="name"
-                />
-                <label htmlFor="dpjp-nama">
-                  <Stethoscope size={18} strokeWidth={2.2} />
-                  Nama Dokter <span style={{ color: "#ef4444" }}>*</span>
-                </label>
+            </div>
+            <div className="graha-inline-row" style={{ marginTop: 12 }}>
+              <div className="graha-gender-group">
+                <span className="graha-gender-label">Jenis Kelamin <span style={{ color: "#ef4444" }}>*</span></span>
+                <div className="graha-gender-options">
+                  <label className={`graha-gender-btn ${jenisKelamin === 'L' ? 'active' : ''}`}>
+                    <input type="radio" name="jenisKelamin" value="L" checked={jenisKelamin === 'L'} onChange={(e) => setJenisKelamin(e.target.value)} />
+                    Laki-laki
+                  </label>
+                  <label className={`graha-gender-btn ${jenisKelamin === 'P' ? 'active' : ''}`}>
+                    <input type="radio" name="jenisKelamin" value="P" checked={jenisKelamin === 'P'} onChange={(e) => setJenisKelamin(e.target.value)} />
+                    Perempuan
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -521,7 +593,7 @@ export default function GrahaDpjpApp() {
               : canSubmit
                 ? "Kirim Survei"
                 : !identityFilled
-                  ? "Lengkapi NIP dan Nama terlebih dahulu"
+                  ? "Lengkapi Divisi dan Jenis Kelamin"
                   : `Jawab semua pertanyaan (${answered}/${total})`}
           </motion.button>
         </div>
